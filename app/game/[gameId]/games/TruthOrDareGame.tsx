@@ -5,6 +5,7 @@ import GameLayout from '@/components/GameLayout';
 import NeonButton from '@/components/NeonButton';
 import SkipButton from '@/components/SkipButton';
 import HandoffScreen from '@/components/HandoffScreen';
+import TurnIndicator from '@/components/TurnIndicator';
 import { TRUTHS, DARES } from '@/data/zh-CN/truthOrDare';
 import { pick, randomId } from '@/lib/random';
 import { usePartyStore } from '@/store/usePartyStore';
@@ -21,6 +22,7 @@ export default function TruthOrDareGame() {
   const [picked, setPicked] = useState<{ k: string; mode: 'truth' | 'dare'; text: string } | null>(null);
   const [round, setRound] = useState(1);
   const [handoff, setHandoff] = useState(false);
+  const [stats, setStats] = useState({ done: 0, skip: 0 });
 
   const truthsPool = useMemo(() => filterByModeAndLevel(TRUTHS, settings.mode, settings.contentLevel), [settings.mode, settings.contentLevel]);
   const daresPool  = useMemo(() => filterByModeAndLevel(DARES,  settings.mode, settings.contentLevel), [settings.mode, settings.contentLevel]);
@@ -34,7 +36,8 @@ export default function TruthOrDareGame() {
     setPicked({ k: randomId(), mode: actual, text: card.text });
   };
 
-  const goNext = () => {
+  const advance = (kind: 'done' | 'skip') => {
+    setStats((s) => ({ ...s, [kind]: s[kind] + 1 }));
     setPicked(null);
     next();
     setRound((r) => r + 1);
@@ -42,19 +45,12 @@ export default function TruthOrDareGame() {
   };
 
   return (
-    <GameLayout title="真心话大冒险 🔥" currentPlayer={current?.name} rules={`第 ${round} 轮 · 可随时跳过`}>
+    <GameLayout title="真心话大冒险 🔥" rules={`已完成 ${stats.done} · 跳过 ${stats.skip} · 可随时跳过`}>
+      <TurnIndicator player={current} round={round} label="本轮玩家" />
       <AnimatePresence mode="wait">
         {!picked ? (
-          <motion.div key="pick" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="py-6 space-y-3">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-              className="text-center mb-3"
-            >
-              <div className="text-xs font-black text-paper-900/60">本轮玩家</div>
-              <div className="text-3xl font-black text-paper-900 mt-1">{current?.name}</div>
-            </motion.div>
+          <motion.div key="pick" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="py-4 space-y-3">
+            <div className="text-center text-sm font-bold text-paper-900/70 mb-2">选一个：</div>
             <NeonButton full size="lg" onClick={() => draw('truth')}>💬 真心话</NeonButton>
             <NeonButton full size="lg" variant="secondary" onClick={() => draw('dare')}>🔥 大冒险</NeonButton>
             <NeonButton full size="lg" variant="ghost" onClick={() => draw('random')}>🎲 交给运气</NeonButton>
@@ -78,8 +74,8 @@ export default function TruthOrDareGame() {
               <div className="text-xl font-black leading-relaxed text-paper-900">{picked.text}</div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <SkipButton onClick={goNext} label="跳过 · 下一位" />
-              <NeonButton onClick={goNext}>✓ 完成 · 下一位</NeonButton>
+              <SkipButton onClick={() => advance('skip')} label="跳过 · 下一位" />
+              <NeonButton onClick={() => advance('done')}>✓ 完成 · 下一位</NeonButton>
             </div>
             <div className="mt-2">
               <NeonButton full variant="secondary" size="sm" onClick={() => draw(picked.mode)}>🔄 重抽一张</NeonButton>
