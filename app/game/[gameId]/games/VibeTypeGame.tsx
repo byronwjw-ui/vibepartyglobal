@@ -1,0 +1,279 @@
+'use client';
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import GameLayout from '@/components/GameLayout';
+import NeonButton from '@/components/NeonButton';
+import GlassCard from '@/components/GlassCard';
+import SkipButton from '@/components/SkipButton';
+import { usePartyStore } from '@/store/usePartyStore';
+import { VIBE_QUESTIONS, ARCHETYPES, computeType, summarizeParty, type AxisLetter } from '@/data/zh-CN/vibeType';
+import { vibrate } from '@/lib/gameUtils';
+import { shuffle } from '@/lib/random';
+
+type Phase = 'intro' | 'test' | 'reveal' | 'blindGuess' | 'blindResult';
+
+interface PlayerResult { playerId: string; type: string; answers: Record<string, AxisLetter>; }
+
+export default function VibeTypeGame() {
+  const players = usePartyStore((s) => s.players);
+  const [phase, setPhase] = useState<Phase>('intro');
+  const [playerIdx, setPlayerIdx] = useState(0);
+  const [qIdx, setQIdx] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, AxisLetter>>({});
+  const [results, setResults] = useState<PlayerResult[]>([]);
+  // 盲猜阶段
+  const [guessTargetIdx, setGuessTargetIdx] = useState(0);
+  const [guessAxisIdx, setGuessAxisIdx] = useState(0);
+  const [guessScores, setGuessScores] = useState<Record<string, number>>({});
+  const [currentGuess, setCurrentGuess] = useState<Record<string, AxisLetter | null>>({});
+
+  const current = players[playerIdx];
+  const question = VIBE_QUESTIONS[qIdx];
+  const totalQ = VIBE_QUESTIONS.length;
+
+  const startTest = () => {
+    setPhase('test'); setPlayerIdx(0); setQIdx(0); setAnswers({}); setResults([]);
+  };
+
+  const pickOption = (letter: AxisLetter) => {
+    vibrate(15);
+    const nextAnswers = { ...answers, [question.id]: letter };
+    setAnswers(nextAnswers);
+    if (qIdx < totalQ - 1) {
+      setQIdx(qIdx + 1);
+    } else {
+      // 该玩家测完
+      const type = computeType(nextAnswers);
+      const finished: PlayerResult = { playerId: current.id, type, answers: nextAnswers };
+      const allResults = [...results, finished];
+      setResults(allResults);
+      if (playerIdx < players.length - 1) {
+        setPlayerIdx(playerIdx + 1);
+        setQIdx(0);
+        setAnswers({});
+      } else {
+        setPhase('reveal');
+      }
+    }
+  };
+
+  const skipQuestion = () => {
+    // 跳过默认选 A（不影响大势、保证能走完）
+    pickOption(question.optionA.letter);
+  };
+
+  // 进入盲猜阶段
+  const startBlind = () => {
+    setPhase('blindGuess');
+    setGuessTargetIdx(0);
+    setGuessAxisIdx(0);
+    setGuessScores({});
+    setCurrentGuess({});
+  };
+
+  const guessTarget = players[guessTargetIdx];
+  const axes: { key: 'EI'|'SN'|'TF'|'JP'; a: AxisLetter; b: AxisLetter; aLabel: string; bLabel: string }[] = [
+    { key: 'EI', a: 'E', b: 'I', aLabel: '外放 E', bLabel: '内秀 I' },
+    { key: 'SN', a: 'S', b: 'N', aLabel: '现实 S', bLabel: '想象 N' },
+    { key: 'TF', a: 'T', b: 'F', aLabel: '理性 T', bLabel: '感性 F' },
+    { key: 'JP', a: 'J', b: 'P', aLabel: '计划 J', bLabel: '即兴 P' },
+  ];
+  const currentAxis = axes[guessAxisIdx];
+
+  const submitGuess = (letter: AxisLetter) => {
+    vibrate(15);
+    const nextGuess = { ...currentGuess, [currentAxis.key]: letter };
+    setCurrentGuess(nextGuess);
+    if (guessAxisIdx < axes.length - 1) {
+      setGuessAxisIdx(guessAxisIdx + 1);
+    } else {
+      // 一个 target 猜完 4 个轴，计算该 target 被猜准几个
+      const target = results.find((r) => r.playerId === guessTarget.id);
+      if (target) {
+        const correct = axes.reduce((acc, ax) => {
+          // 统计 target 在该轴的主导选择
+          const counts: Record<AxisLetter, number> = { E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0 };
+          Object.entries(target.answers).forEach(([qid, l]) => {
+            const q = VIBE_QUESTIONS.find((x) => x.id === qid);
+            if (q && q.axis === ax.key) counts[l]++;
+          });
+          const dominant: AxisLetter = counts[ax.a] >= counts[ax.b] ? ax.a : ax.b;
+          return acc + (nextGuess[ax.key] === dominant ? 1 : 0);
+        }, 0);
+        setGuessScores((s) => ({ ...s, [guessTarget.id]: correct }));
+      }
+      if (guessTargetIdx < players.length - 1) {
+        setGuessTargetIdx(guessTargetIdx + 1);
+        setGuessAxisIdx(0);
+        setCurrentGuess({});
+      } else {
+        setPhase('blindResult');
+      }
+    }
+  };
+
+  const restart = () => { setPhase('intro'); };
+
+  // ============ 渲染 ============
+  if (phase === 'intro') {
+    return (
+      <GameLayout title="VibeType · 派对人格" subtitle="12题 · 大约 1 分钟">
+        <div className="px-4 space-y-4">
+          <GlassCard tone="pink">
+            <div className="text-2xl font-black">今晚你是谁？ 🔮</div>
+            <p className="mt-2 text-sm font-semibold text-paper-900/80">
+              12 道派对情境题，测出你今晚的派对角色。所有玩家依次传手机测，全部测完一起揭晓今晚配置。
+            </p>
+            <p className="mt-2 text-xs font-semibold text-paper-900/60">仅供派对娱乐，不代表真实人格测评。</p>
+          </GlassCard>
+          <GlassCard>
+            <div className="font-black">会玩到的 4 个维度</div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold">
+              <Pill>🎈 外放 E / 内秀 I</Pill>
+              <Pill>🔮 现实 S / 想象 N</Pill>
+              <Pill>🧊 理性 T / 感性 F</Pill>
+              <Pill>📅 计划 J / 即兴 P</Pill>
+            </div>
+          </GlassCard>
+          <NeonButton full size="lg" onClick={startTest}>开始测 →</NeonButton>
+        </div>
+      </GameLayout>
+    );
+  }
+
+  if (phase === 'test' && current && question) {
+    return (
+      <GameLayout title="VibeType 测试" subtitle={`${current.name} · ${qIdx + 1} / ${totalQ}`}>
+        <div className="px-4 space-y-4">
+          {/* 进度条 */}
+          <div className="h-3 rounded-full border-3 border-paper-900 bg-paper-50 overflow-hidden">
+            <div className="h-full bg-sticker-pink transition-all" style={{ width: `${((qIdx + 1) / totalQ) * 100}%` }} />
+          </div>
+          <GlassCard tone="yellow">
+            <div className="text-[11px] font-black text-paper-900/60">情境</div>
+            <div className="mt-1 text-lg font-black leading-relaxed">{question.prompt}</div>
+          </GlassCard>
+          <AnimatePresence mode="wait">
+            <motion.div key={question.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-3">
+              <button onClick={() => pickOption(question.optionA.letter)} className="w-full text-left p-4 rounded-2xl border-3 border-paper-900 bg-sticker-cyan shadow-sticker press-down tilt-l-sm">
+                <div className="text-xs font-black text-paper-900/60">A</div>
+                <div className="font-black text-paper-900">{question.optionA.text}</div>
+              </button>
+              <button onClick={() => pickOption(question.optionB.letter)} className="w-full text-left p-4 rounded-2xl border-3 border-paper-900 bg-sticker-pink shadow-sticker press-down tilt-r-sm">
+                <div className="text-xs font-black text-paper-900/60">B</div>
+                <div className="font-black text-paper-900">{question.optionB.text}</div>
+              </button>
+            </motion.div>
+          </AnimatePresence>
+          <div className="pt-2"><SkipButton onClick={skipQuestion} /></div>
+        </div>
+      </GameLayout>
+    );
+  }
+
+  if (phase === 'reveal') {
+    const summary = summarizeParty(results.map((r) => r.type));
+    return (
+      <GameLayout title="今晚配置" subtitle="所有人的派对人格揭晓">
+        <div className="px-4 space-y-3">
+          <GlassCard tone="lime">
+            <div className="font-black text-paper-900">今晚配置</div>
+            <div className="text-sm font-bold text-paper-900/80 mt-1">{summary || '—'}</div>
+          </GlassCard>
+          {results.map((r) => {
+            const player = players.find((p) => p.id === r.playerId);
+            const a = ARCHETYPES[r.type];
+            if (!player || !a) return null;
+            return (
+              <motion.div key={r.playerId} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}
+                className={`border-3 border-paper-900 rounded-3xl shadow-sticker p-4 ${a.color} tilt-l-sm`}>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-2xl border-3 border-paper-900 grid place-items-center text-3xl bg-paper-50">{a.emoji}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-black text-paper-900/60">{player.name}</div>
+                    <div className="font-black text-paper-900 truncate">{a.nickname} · {a.type}</div>
+                  </div>
+                </div>
+                <div className="mt-3 text-sm font-bold text-paper-900">“{a.oneLiner}”</div>
+                <div className="mt-1 text-xs font-bold text-paper-900/70">今晚建议：{a.advice}</div>
+              </motion.div>
+            );
+          })}
+          <div className="pt-3 grid grid-cols-2 gap-3">
+            <NeonButton full variant="secondary" onClick={restart}>重新测</NeonButton>
+            <NeonButton full onClick={startBlind}>进入盲猜 🙈</NeonButton>
+          </div>
+          <p className="text-center text-[11px] text-paper-900/50 font-bold pt-2">仅供派对娱乐，不代表真实人格测评。</p>
+        </div>
+      </GameLayout>
+    );
+  }
+
+  if (phase === 'blindGuess' && guessTarget && currentAxis) {
+    return (
+      <GameLayout title="盲猜 · 谁是派对人精" subtitle={`猜 · ${guessTarget.name} · ${guessAxisIdx + 1} / 4`}>
+        <div className="px-4 space-y-4">
+          <GlassCard tone="pink">
+            <div className="text-xs font-black text-paper-900/60">全场一起猜</div>
+            <div className="mt-1 text-2xl font-black">{guessTarget.name} 是哪一面？</div>
+          </GlassCard>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => submitGuess(currentAxis.a)} className="p-6 rounded-3xl border-3 border-paper-900 bg-sticker-cyan shadow-sticker press-down tilt-l-sm">
+              <div className="text-3xl mb-1">{axisEmoji(currentAxis.a)}</div>
+              <div className="font-black text-paper-900">{currentAxis.aLabel}</div>
+            </button>
+            <button onClick={() => submitGuess(currentAxis.b)} className="p-6 rounded-3xl border-3 border-paper-900 bg-sticker-pink shadow-sticker press-down tilt-r-sm">
+              <div className="text-3xl mb-1">{axisEmoji(currentAxis.b)}</div>
+              <div className="font-black text-paper-900">{currentAxis.bLabel}</div>
+            </button>
+          </div>
+          <div className="text-center text-xs font-bold text-paper-900/60">已猜 {guessTargetIdx} / {players.length} 人</div>
+        </div>
+      </GameLayout>
+    );
+  }
+
+  if (phase === 'blindResult') {
+    const ranked = [...players].map((p) => ({ p, score: guessScores[p.id] ?? 0 })).sort((a, b) => b.score - a.score);
+    const top = ranked[0];
+    return (
+      <GameLayout title="盲猜结果" subtitle="今晚的派对人精是…">
+        <div className="px-4 space-y-3">
+          {top && (
+            <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 180 }}
+              className="border-3 border-paper-900 rounded-3xl shadow-sticker p-5 bg-sticker-yellow text-center tilt-r-sm">
+              <div className="text-5xl">🏆</div>
+              <div className="mt-2 font-black text-paper-900">今晚派对人精</div>
+              <div className="text-2xl font-black neon-text mt-1">{top.p.name}</div>
+              <div className="text-xs font-bold text-paper-900/70 mt-1">猜对 {top.score} / {players.length * 4}</div>
+            </motion.div>
+          )}
+          <GlassCard>
+            <div className="font-black text-paper-900 mb-2">详细得分</div>
+            <ul className="space-y-1 text-sm font-bold text-paper-900/85">
+              {ranked.map(({ p, score }) => (
+                <li key={p.id} className="flex items-center justify-between">
+                  <span>{p.name}</span><span>{score} / {players.length * 4}</span>
+                </li>
+              ))}
+            </ul>
+          </GlassCard>
+          <div className="pt-3 grid grid-cols-2 gap-3">
+            <NeonButton full variant="secondary" onClick={restart}>再玩一局</NeonButton>
+            <a href="/lobby" className="contents"><NeonButton full>返回大厅</NeonButton></a>
+          </div>
+        </div>
+      </GameLayout>
+    );
+  }
+
+  return null;
+}
+
+function Pill({ children }: { children: React.ReactNode }) {
+  return <span className="px-3 py-2 rounded-full border-3 border-paper-900 bg-paper-50 shadow-sticker-sm text-center">{children}</span>;
+}
+
+function axisEmoji(l: AxisLetter): string {
+  return ({ E: '📢', I: '🌙', S: '📏', N: '💫', T: '🧊', F: '💖', J: '📅', P: '🎲' } as Record<string, string>)[l];
+}
