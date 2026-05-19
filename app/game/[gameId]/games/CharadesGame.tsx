@@ -1,62 +1,86 @@
 'use client';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import GameLayout from '@/components/GameLayout';
 import NeonButton from '@/components/NeonButton';
 import CountdownTimer from '@/components/CountdownTimer';
-import ScoreBoard from '@/components/ScoreBoard';
-import PlayerSelector from '@/components/PlayerSelector';
+import TurnIndicator from '@/components/TurnIndicator';
+import GameEndScreen from '@/components/GameEndScreen';
 import { CHARADES } from '@/data/zh-CN/charades';
 import { pick, randomId } from '@/lib/random';
 import { usePartyStore } from '@/store/usePartyStore';
+import { useTurn } from '@/lib/useTurn';
+import { vibrate } from '@/lib/gameUtils';
+
+type Phase = 'idle' | 'play' | 'end';
 
 export default function CharadesGame() {
   const players = usePartyStore((s) => s.players);
   const bumpScore = usePartyStore((s) => s.bumpScore);
-  const [actorId, setActorId] = useState<string | null>(null);
-  const [running, setRunning] = useState(false);
-  const [word, setWord] = useState<{ k: string; w: string; c: string } | null>(null);
-  const [round, setRound] = useState({ correct: 0, skip: 0 });
+  const settings = usePartyStore((s) => s.settings);
+  const { current, next } = useTurn(players);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [word, setWord] = useState<{ k: string; text: string; cat: string } | null>(null);
+  const [seconds] = useState(60);
+  const [stats, setStats] = useState({ correct: 0, skipped: 0 });
+  const tickRef = useRef(0);
 
-  const actor = players.find((p) => p.id === actorId);
+  const draw = () => { const w = pick(CHARADES); setWord({ k: randomId(), text: w.text, cat: w.category }); };
+  const start = () => { setStats({ correct: 0, skipped: 0 }); tickRef.current++; setPhase('play'); draw(); };
+  const mark = (k: 'correct' | 'skipped') => { setStats((s) => ({ ...s, [k]: s[k] + 1 })); if (k === 'correct') vibrate(20); draw(); };
+  const onEnd = () => { if (current) bumpScore(current.id, stats.correct); setPhase('end'); next(); };
+  const restart = () => { setPhase('idle'); setWord(null); setStats({ correct: 0, skipped: 0 }); };
 
-  const start = () => {
-    if (!actorId) return;
-    const c = pick(CHARADES);
-    setWord({ k: randomId(), w: c.word, c: c.category });
-    setRunning(true);
-    setRound({ correct: 0, skip: 0 });
-  };
-  const nextWord = () => { const c = pick(CHARADES); setWord({ k: randomId(), w: c.word, c: c.category }); };
-  const onCorrect = () => { setRound((r) => ({ ...r, correct: r.correct + 1 })); nextWord(); };
-  const onSkip = () => { setRound((r) => ({ ...r, skip: r.skip + 1 })); nextWord(); };
-  const onDone = () => { if (actorId) bumpScore(actorId, round.correct); setRunning(false); setWord(null); };
+  if (phase === 'end') {
+    return (
+      <GameLayout title="你演我猜 🎭" rules="本轮结束">
+        <GameEndScreen
+          title={`${current?.name || '上位'} 本轮得分 +${stats.correct}`}
+          emoji="🎭"
+          subtitle="可以对着下一位玩家再来一轮"
+          stats={[
+            { label: '猜对', value: stats.correct },
+            { label: '跳过', value: stats.skipped },
+          ]}
+          onRestart={restart}
+        />
+      </GameLayout>
+    );
+  }
 
   return (
-    <GameLayout title="你演我猜 🎭" rules="表演者只能表演不能说话，其他人猜。默认 60 秒。">
-      {!running ? (
-        <div className="py-4 space-y-4">
-          <div className="text-sm font-bold text-paper-900/70">选一位表演者</div>
-          <PlayerSelector players={players} selectedId={actorId || undefined} onSelect={setActorId} />
-          <NeonButton full size="lg" disabled={!actorId} onClick={start}>开始表演</NeonButton>
-          <ScoreBoard players={players} />
-        </div>
-      ) : (
-        <div className="py-4 space-y-4">
-          <div className="grid place-items-center"><CountdownTimer seconds={60} running onEnd={onDone} /></div>
-          <motion.div key={word?.k} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="sticker p-8 text-center bg-sticker-cyan">
-            <div className="text-xs font-bold text-paper-900/70">{word?.c}</div>
-            <div className="text-4xl font-black doodle-title mt-2">{word?.w}</div>
-            <div className="text-xs font-bold text-paper-900/65 mt-2">表演者：{actor?.name}</div>
+    <GameLayout title="你演我猜 🎭" rules="表演者不能说话 · 60 秒内尽量让别人猜对">
+      <TurnIndicator player={current} label="本轮表演" />
+      <AnimatePresence mode="wait">
+        {phase === 'idle' ? (
+          <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-6 text-center space-y-3">
+            <div className="text-7xl">🎭</div>
+            <div className="text-sm font-bold text-paper-900/70 max-w-xs mx-auto">表演者拿手机、背对他人。上方是要表演的词，被猜对 · 点“猜对”；猜不出 · 点“跳过”。</div>
+            <NeonButton full size="lg" onClick={start}>🚀 开始 60 秒</NeonButton>
           </motion.div>
-          <div className="grid grid-cols-2 gap-2">
-            <NeonButton variant="secondary" size="lg" onClick={onSkip}>跳过</NeonButton>
-            <NeonButton size="lg" onClick={onCorrect}>猜对 +1</NeonButton>
-          </div>
-          <div className="text-center text-xs font-bold text-paper-900/70">本轮猜对 {round.correct} · 跳过 {round.skip}</div>
-          <NeonButton full variant="ghost" onClick={onDone}>提前结束本轮</NeonButton>
-        </div>
-      )}
+        ) : word ? (
+          <motion.div key="play" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-black px-2 py-1 rounded-full border-2 border-paper-900 bg-sticker-yellow">猜对 {stats.correct}</div>
+              <CountdownTimer seconds={seconds} running onEnd={onEnd} />
+              <div className="text-xs font-black px-2 py-1 rounded-full border-2 border-paper-900 bg-paper-50">跳过 {stats.skipped}</div>
+            </div>
+            <AnimatePresence mode="wait">
+              <motion.div key={word.k} initial={{ rotateX: -90, opacity: 0 }} animate={{ rotateX: 0, opacity: 1 }} exit={{ rotateX: 90, opacity: 0 }} transition={{ duration: 0.3 }} className="sticker p-8 text-center min-h-[200px] grid place-items-center bg-sticker-cyan">
+                <div>
+                  <div className="text-xs font-bold text-paper-900/70 mb-2">{word.cat}</div>
+                  <div className="text-4xl font-black doodle-title leading-tight">{word.text}</div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+            <div className="grid grid-cols-2 gap-2">
+              <NeonButton size="lg" variant="secondary" onClick={() => mark('skipped')}>⏭ 跳过</NeonButton>
+              <NeonButton size="lg" onClick={() => mark('correct')}>✅ 猜对</NeonButton>
+            </div>
+            <NeonButton full variant="ghost" size="sm" onClick={onEnd}>提前结束</NeonButton>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </GameLayout>
   );
 }

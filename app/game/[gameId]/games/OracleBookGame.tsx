@@ -6,51 +6,72 @@ import NeonButton from '@/components/NeonButton';
 import { ORACLE_ANSWERS } from '@/data/zh-CN/oracle';
 import { pick, randomId } from '@/lib/random';
 import { vibrate } from '@/lib/gameUtils';
-import { usePartyStore } from '@/store/usePartyStore';
 
 export default function OracleBookGame() {
-  const settings = usePartyStore((s) => s.settings);
-  const [answer, setAnswer] = useState<{ k: string; t: string } | null>(null);
+  const [answer, setAnswer] = useState<{ k: string; text: string } | null>(null);
   const [flipping, setFlipping] = useState(false);
+  const [count, setCount] = useState(0);
 
   const reveal = () => {
-    if (settings.vibrationEnabled) vibrate(20);
     setFlipping(true);
+    vibrate(15);
     setTimeout(() => {
-      setAnswer({ k: randomId(), t: pick(ORACLE_ANSWERS) });
+      setAnswer({ k: randomId(), text: pick(ORACLE_ANSWERS) });
+      setCount((c) => c + 1);
       setFlipping(false);
-    }, 350);
+    }, 700);
   };
 
   return (
-    <GameLayout title="答案之书 🔮" rules="心里默念一个问题，再翻开答案。">
-      <div className="grid place-items-center py-6">
-        <div className="text-center text-sm text-paper-900/70 mb-4 font-bold">先在心里默念一个问题</div>
-        <div className="relative w-full max-w-sm aspect-[3/4]">
-          <AnimatePresence mode="wait">
-            {!answer ? (
-              <motion.div key="cover" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, rotateY: 90 }} transition={{ duration: 0.35 }}
-                className="absolute inset-0 sticker grid place-items-center text-center p-8 bg-sticker-purple/30">
-                <div>
-                  <div className="text-6xl mb-3">🔮</div>
-                  <div className="text-2xl font-black doodle-title">答案之书</div>
-                  <div className="text-xs text-paper-900/70 mt-2 font-bold">让它替你回答</div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div key={answer.k} initial={{ opacity: 0, rotateY: -90 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0, rotateY: 90 }} transition={{ duration: 0.45 }}
-                className="absolute inset-0 sticker grid place-items-center p-8 text-center bg-sticker-yellow">
-                <div className="text-xl leading-relaxed font-black doodle-title">{answer.t}</div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+    <GameLayout title="答案之书 📖" rules={`默念一个问题，然后翻开。已翻 ${count} 页。`}>
+      <div className="py-6 grid place-items-center min-h-[280px]">
+        <AnimatePresence mode="wait">
+          {flipping ? (
+            <motion.div
+              key="flip"
+              initial={{ rotateY: 0 }}
+              animate={{ rotateY: 180 }}
+              transition={{ duration: 0.7, ease: 'easeInOut' }}
+              className="sticker p-10 bg-neon-grad text-paper-50 text-center"
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              <div className="text-6xl">📖</div>
+              <div className="font-black mt-2 doodle-title">翻开中…</div>
+            </motion.div>
+          ) : answer ? (
+            <motion.div
+              key={answer.k}
+              initial={{ scale: 0.7, opacity: 0, rotateY: -30 }}
+              animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+              transition={{ type: 'spring', stiffness: 180, damping: 16 }}
+              className="sticker p-8 text-center min-h-[220px] grid place-items-center bg-sticker-yellow w-full"
+            >
+              <div>
+                <div className="text-xs font-bold text-paper-900/70 mb-2">答案是</div>
+                <div className="text-2xl font-black doodle-title leading-relaxed text-paper-900">“{answer.text}”</div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="closed"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              animate={{ rotate: [-1, 1, -1], y: [0, -3, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              onClick={reveal}
+              className="sticker p-10 bg-neon-grad text-paper-50 text-center cursor-pointer"
+            >
+              <div className="text-7xl">📖</div>
+              <div className="font-black mt-2 text-xl doodle-title">点击翻开</div>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
-
-      <div className="mt-6 flex gap-2">
-        <NeonButton full size="lg" onClick={reveal} disabled={flipping}>{answer ? '再翻一次' : '翻开答案'}</NeonButton>
-        {answer && <NeonButton variant="secondary" size="lg" onClick={() => setAnswer(null)}>合上</NeonButton>}
+      <div className="grid grid-cols-2 gap-2">
+        <NeonButton size="lg" variant="secondary" onClick={() => { setAnswer(null); setCount(0); }}>重置</NeonButton>
+        <NeonButton size="lg" onClick={reveal}>{answer ? '再抽一条' : '翻开答案'}</NeonButton>
       </div>
+      <div className="mt-3 text-center text-xs font-bold text-paper-900/50">答案仅供佐酒剧本，不代表现实决策。</div>
     </GameLayout>
   );
 }
