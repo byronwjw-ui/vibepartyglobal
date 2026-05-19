@@ -44,11 +44,15 @@ body {
     color: transparent;
     -webkit-text-stroke: 0;
   }
-  /* 手写感大标题 */
+  /*
+   * 手写感大标题
+   * 重要：中文笔画密，不使用 text-shadow、不使用 -webkit-text-stroke。
+   * 否则大字号中文会糊成重影。
+   * 只保留 900 字重 + 负字距营造紧凑感。
+   */
   .doodle-title {
     font-weight: 900;
     letter-spacing: -0.02em;
-    text-shadow: 3px 3px 0 #161312;
   }
   /* 轻微随机旋转工具类 */
   .tilt-l { transform: rotate(-2deg); }
