@@ -1,24 +1,26 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import GameLayout from '@/components/GameLayout';
 import GlassCard from '@/components/GlassCard';
 import NeonButton from '@/components/NeonButton';
-import SkipButton from '@/components/SkipButton';
 import { usePartyStore } from '@/store/usePartyStore';
 import { AI_PROMPTS, AI_STYLE_TIPS } from '@/data/zh-CN/whoIsAi';
 import { filterByModeAndLevel } from '@/lib/modeFilter';
-import { pick, pickN, shuffle } from '@/lib/random';
+import { pick } from '@/lib/random';
 import { vibrate } from '@/lib/gameUtils';
 
-type Phase = 'intro' | 'assign' | 'view' | 'prompt' | 'discuss' | 'vote' | 'reveal';
+type Phase = 'intro' | 'assign' | 'prompt' | 'vote' | 'reveal';
 
 export default function WhoIsAiGame() {
   const players = usePartyStore((s) => s.players);
   const settings = usePartyStore((s) => s.settings);
   const bumpScore = usePartyStore((s) => s.bumpScore);
 
-  const pool = useMemo(() => filterByModeAndLevel(AI_PROMPTS, settings.mode, settings.contentLevel), [settings.mode, settings.contentLevel]);
+  const pool = useMemo(
+    () => filterByModeAndLevel(AI_PROMPTS, settings.mode, settings.contentLevel),
+    [settings.mode, settings.contentLevel]
+  );
 
   const [phase, setPhase] = useState<Phase>('intro');
   const [aiPlayerId, setAiPlayerId] = useState<string | null>(null);
@@ -26,12 +28,26 @@ export default function WhoIsAiGame() {
   const [revealed, setRevealed] = useState(false);
   const [prompt, setPrompt] = useState<string>('');
   const [votedId, setVotedId] = useState<string | null>(null);
+  const scoredRef = useRef(false);
+
+  // 揭晓阶段加分（只结算一次）
+  useEffect(() => {
+    if (phase !== 'reveal' || scoredRef.current) return;
+    scoredRef.current = true;
+    const ai = players.find((p) => p.id === aiPlayerId);
+    const voted = players.find((p) => p.id === votedId);
+    if (votedId && votedId === aiPlayerId && voted) bumpScore(voted.id, 1);
+    else if (ai) bumpScore(ai.id, 1);
+  }, [phase, aiPlayerId, votedId, players, bumpScore]);
 
   const start = () => {
     const ai = pick(players);
     setAiPlayerId(ai.id);
     setPrompt(pick(pool.length ? pool : AI_PROMPTS).text);
-    setViewIdx(0); setRevealed(false); setVotedId(null);
+    setViewIdx(0);
+    setRevealed(false);
+    setVotedId(null);
+    scoredRef.current = false;
     setPhase('assign');
   };
 
@@ -131,10 +147,6 @@ export default function WhoIsAiGame() {
     const aiPlayer = players.find((p) => p.id === aiPlayerId);
     const voted = players.find((p) => p.id === votedId);
     const success = votedId === aiPlayerId;
-    useEffect(() => {
-      if (success && voted) bumpScore(voted.id, 1);
-      else if (!success && aiPlayer) bumpScore(aiPlayer.id, 1);
-    }, []);
     return (
       <GameLayout title="揭晓" subtitle={success ? '人类赢 🎉' : 'AI 蒙混过关 🤖'}>
         <div className="px-4 space-y-3">
