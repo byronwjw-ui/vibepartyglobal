@@ -6,9 +6,11 @@ import { usePartyStore } from '@/store/usePartyStore';
 import { MODE_THEME } from '@/lib/constants';
 
 export default function GameLayout({
-  title, children, footer, rules, currentPlayer,
+  title, subtitle, children, footer, rules, currentPlayer,
 }: {
   title: string;
+  /** 副标题（小字，显示在 title 下方） */
+  subtitle?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
   /** 顶部可显示的简短规则 */
@@ -23,6 +25,10 @@ export default function GameLayout({
     <AppShell>
       <PageHeader title={title} backHref="/lobby" />
       <main className="px-4 pb-24">
+        {/* 副标题 */}
+        {subtitle && (
+          <div className="px-1 mb-2 text-xs font-bold text-paper-900/70">{subtitle}</div>
+        )}
         {/* 顶部小信息条：当前模式 / 玩家 / 规则 */}
         {(rules || currentPlayer) && (
           <div className={`mb-3 rounded-2xl border-3 border-paper-900 px-3 py-2 ${theme.bg} shadow-sticker-sm tilt-l-sm`}>
