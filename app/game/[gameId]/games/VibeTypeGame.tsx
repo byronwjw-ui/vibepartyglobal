@@ -5,12 +5,14 @@ import GameLayout from '@/components/GameLayout';
 import NeonButton from '@/components/NeonButton';
 import GlassCard from '@/components/GlassCard';
 import SkipButton from '@/components/SkipButton';
+import HandoffScreen from '@/components/HandoffScreen';
+import PhaseProgress from '@/components/PhaseProgress';
+import ShareResultCard from '@/components/ShareResultCard';
 import { usePartyStore } from '@/store/usePartyStore';
 import { VIBE_QUESTIONS, ARCHETYPES, computeType, summarizeParty, type AxisLetter } from '@/data/zh-CN/vibeType';
 import { vibrate } from '@/lib/gameUtils';
-import { shuffle } from '@/lib/random';
 
-type Phase = 'intro' | 'test' | 'reveal' | 'blindGuess' | 'blindResult';
+type Phase = 'intro' | 'handoff' | 'test' | 'reveal' | 'blindGuess' | 'blindHandoff' | 'blindResult';
 
 interface PlayerResult { playerId: string; type: string; answers: Record<string, AxisLetter>; }
 
@@ -32,7 +34,7 @@ export default function VibeTypeGame() {
   const totalQ = VIBE_QUESTIONS.length;
 
   const startTest = () => {
-    setPhase('test'); setPlayerIdx(0); setQIdx(0); setAnswers({}); setResults([]);
+    setPhase('handoff'); setPlayerIdx(0); setQIdx(0); setAnswers({}); setResults([]);
   };
 
   const pickOption = (letter: AxisLetter) => {
@@ -42,29 +44,28 @@ export default function VibeTypeGame() {
     if (qIdx < totalQ - 1) {
       setQIdx(qIdx + 1);
     } else {
-      // 该玩家测完
+      // 当前玩家测完
       const type = computeType(nextAnswers);
       const finished: PlayerResult = { playerId: current.id, type, answers: nextAnswers };
       const allResults = [...results, finished];
       setResults(allResults);
       if (playerIdx < players.length - 1) {
+        // 进入"传手机"过渡
         setPlayerIdx(playerIdx + 1);
         setQIdx(0);
         setAnswers({});
+        setPhase('handoff');
       } else {
         setPhase('reveal');
       }
     }
   };
 
-  const skipQuestion = () => {
-    // 跳过默认选 A（不影响大势、保证能走完）
-    pickOption(question.optionA.letter);
-  };
+  const skipQuestion = () => { pickOption(question.optionA.letter); };
 
   // 进入盲猜阶段
   const startBlind = () => {
-    setPhase('blindGuess');
+    setPhase('blindHandoff');
     setGuessTargetIdx(0);
     setGuessAxisIdx(0);
     setGuessScores({});
@@ -87,11 +88,9 @@ export default function VibeTypeGame() {
     if (guessAxisIdx < axes.length - 1) {
       setGuessAxisIdx(guessAxisIdx + 1);
     } else {
-      // 一个 target 猜完 4 个轴，计算该 target 被猜准几个
       const target = results.find((r) => r.playerId === guessTarget.id);
       if (target) {
         const correct = axes.reduce((acc, ax) => {
-          // 统计 target 在该轴的主导选择
           const counts: Record<AxisLetter, number> = { E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0 };
           Object.entries(target.answers).forEach(([qid, l]) => {
             const q = VIBE_QUESTIONS.find((x) => x.id === qid);
@@ -106,6 +105,7 @@ export default function VibeTypeGame() {
         setGuessTargetIdx(guessTargetIdx + 1);
         setGuessAxisIdx(0);
         setCurrentGuess({});
+        setPhase('blindHandoff');
       } else {
         setPhase('blindResult');
       }
@@ -118,7 +118,7 @@ export default function VibeTypeGame() {
   if (phase === 'intro') {
     return (
       <GameLayout title="VibeType · 派对人格" subtitle="12题 · 大约 1 分钟">
-        <div className="px-4 space-y-4">
+        <div className="space-y-4">
           <GlassCard tone="pink">
             <div className="text-2xl font-black">今晚你是谁？ 🔮</div>
             <p className="mt-2 text-sm font-semibold text-paper-900/80">
@@ -141,14 +141,28 @@ export default function VibeTypeGame() {
     );
   }
 
+  // 传手机过渡（每个玩家做题前）
+  if (phase === 'handoff' && current) {
+    return (
+      <>
+        <GameLayout title="VibeType 测试" subtitle={`即将进入：${current.name}`}>
+          <PhaseProgress value={playerIdx} total={players.length} label={`已完成 ${playerIdx} / ${players.length} 位玩家`} tone="pink" />
+        </GameLayout>
+        <HandoffScreen
+          open
+          nextPlayerName={current.name}
+          hint={`接下来轮到你测 12 道题`}
+          onDone={() => setPhase('test')}
+        />
+      </>
+    );
+  }
+
   if (phase === 'test' && current && question) {
     return (
-      <GameLayout title="VibeType 测试" subtitle={`${current.name} · ${qIdx + 1} / ${totalQ}`}>
-        <div className="px-4 space-y-4">
-          {/* 进度条 */}
-          <div className="h-3 rounded-full border-3 border-paper-900 bg-paper-50 overflow-hidden">
-            <div className="h-full bg-sticker-pink transition-all" style={{ width: `${((qIdx + 1) / totalQ) * 100}%` }} />
-          </div>
+      <GameLayout title="VibeType 测试" subtitle={`${current.name} · 第 ${playerIdx + 1} / ${players.length} 位`}>
+        <div className="space-y-4">
+          <PhaseProgress value={qIdx + 1} total={totalQ} label={`第 ${qIdx + 1} / ${totalQ} 题`} tone="pink" />
           <GlassCard tone="yellow">
             <div className="text-[11px] font-black text-paper-900/60">情境</div>
             <div className="mt-1 text-lg font-black leading-relaxed">{question.prompt}</div>
@@ -173,46 +187,77 @@ export default function VibeTypeGame() {
 
   if (phase === 'reveal') {
     const summary = summarizeParty(results.map((r) => r.type));
+    const shareLines = results.map((r) => {
+      const p = players.find((x) => x.id === r.playerId);
+      const a = ARCHETYPES[r.type];
+      return p && a ? `${p.name} · ${a.emoji}${a.nickname}（${a.type}）` : '';
+    }).filter(Boolean).join('\n');
+    const shareText = `🎈 今晚的 VibeType 派对人格揭晓\n\n${shareLines}\n\n来 vibepartyglobal.vercel.app 测测你的派对角色`;
+
     return (
       <GameLayout title="今晚配置" subtitle="所有人的派对人格揭晓">
-        <div className="px-4 space-y-3">
-          <GlassCard tone="lime">
-            <div className="font-black text-paper-900">今晚配置</div>
-            <div className="text-sm font-bold text-paper-900/80 mt-1">{summary || '—'}</div>
-          </GlassCard>
-          {results.map((r) => {
-            const player = players.find((p) => p.id === r.playerId);
-            const a = ARCHETYPES[r.type];
-            if (!player || !a) return null;
-            return (
-              <motion.div key={r.playerId} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}
-                className={`border-3 border-paper-900 rounded-3xl shadow-sticker p-4 ${a.color} tilt-l-sm`}>
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-2xl border-3 border-paper-900 grid place-items-center text-3xl bg-paper-50">{a.emoji}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-black text-paper-900/60">{player.name}</div>
-                    <div className="font-black text-paper-900 truncate">{a.nickname} · {a.type}</div>
+        <ShareResultCard shareText={shareText} filename="vibetype-result.png">
+          <div className="space-y-3 p-3 rounded-3xl bg-paper-50 border-3 border-paper-900">
+            <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 180 }}
+              className="border-3 border-paper-900 rounded-2xl shadow-sticker p-4 bg-sticker-yellow text-center tilt-r-sm">
+              <div className="text-3xl">🎈</div>
+              <div className="text-xs font-black text-paper-900/70 mt-1">今晚 VibeParty 配置</div>
+              <div className="font-black text-paper-900 mt-1">{summary || '—'}</div>
+            </motion.div>
+            {results.map((r, idx) => {
+              const player = players.find((p) => p.id === r.playerId);
+              const a = ARCHETYPES[r.type];
+              if (!player || !a) return null;
+              return (
+                <motion.div key={r.playerId}
+                  initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: 'spring', stiffness: 180, delay: 0.1 + idx * 0.08 }}
+                  className={`border-3 border-paper-900 rounded-2xl shadow-sticker-sm p-3 ${a.color}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-2xl border-3 border-paper-900 grid place-items-center text-3xl bg-paper-50">{a.emoji}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-black text-paper-900/60">{player.name}</div>
+                      <div className="font-black text-paper-900 truncate">{a.nickname} · {a.type}</div>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-3 text-sm font-bold text-paper-900">“{a.oneLiner}”</div>
-                <div className="mt-1 text-xs font-bold text-paper-900/70">今晚建议：{a.advice}</div>
-              </motion.div>
-            );
-          })}
-          <div className="pt-3 grid grid-cols-2 gap-3">
-            <NeonButton full variant="secondary" onClick={restart}>重新测</NeonButton>
-            <NeonButton full onClick={startBlind}>进入盲猜 🙈</NeonButton>
+                  <div className="mt-2 text-sm font-bold text-paper-900">“{a.oneLiner}”</div>
+                  <div className="mt-1 text-xs font-bold text-paper-900/70">今晚建议：{a.advice}</div>
+                </motion.div>
+              );
+            })}
+            <div className="text-center text-[10px] font-bold text-paper-900/50">vibepartyglobal.vercel.app</div>
           </div>
-          <p className="text-center text-[11px] text-paper-900/50 font-bold pt-2">仅供派对娱乐，不代表真实人格测评。</p>
+        </ShareResultCard>
+        <div className="pt-3 grid grid-cols-2 gap-3">
+          <NeonButton full variant="secondary" onClick={restart}>重新测</NeonButton>
+          <NeonButton full onClick={startBlind}>进入盲猜 🙈</NeonButton>
         </div>
+        <p className="text-center text-[11px] text-paper-900/50 font-bold pt-2">仅供派对娱乐，不代表真实人格测评。</p>
       </GameLayout>
+    );
+  }
+
+  if (phase === 'blindHandoff' && guessTarget) {
+    return (
+      <>
+        <GameLayout title="盲猜 · 谁是派对人精" subtitle={`即将猜：${guessTarget.name}`}>
+          <PhaseProgress value={guessTargetIdx} total={players.length} label={`已猜 ${guessTargetIdx} / ${players.length} 位`} tone="cyan" />
+        </GameLayout>
+        <HandoffScreen
+          open
+          nextPlayerName={guessTarget.name}
+          hint="全场一起猜这个人是哪一面"
+          onDone={() => setPhase('blindGuess')}
+        />
+      </>
     );
   }
 
   if (phase === 'blindGuess' && guessTarget && currentAxis) {
     return (
       <GameLayout title="盲猜 · 谁是派对人精" subtitle={`猜 · ${guessTarget.name} · ${guessAxisIdx + 1} / 4`}>
-        <div className="px-4 space-y-4">
+        <div className="space-y-4">
+          <PhaseProgress value={guessAxisIdx + 1} total={4} label="维度" tone="cyan" />
           <GlassCard tone="pink">
             <div className="text-xs font-black text-paper-900/60">全场一起猜</div>
             <div className="mt-1 text-2xl font-black">{guessTarget.name} 是哪一面？</div>
@@ -227,7 +272,6 @@ export default function VibeTypeGame() {
               <div className="font-black text-paper-900">{currentAxis.bLabel}</div>
             </button>
           </div>
-          <div className="text-center text-xs font-bold text-paper-900/60">已猜 {guessTargetIdx} / {players.length} 人</div>
         </div>
       </GameLayout>
     );
@@ -238,7 +282,7 @@ export default function VibeTypeGame() {
     const top = ranked[0];
     return (
       <GameLayout title="盲猜结果" subtitle="今晚的派对人精是…">
-        <div className="px-4 space-y-3">
+        <div className="space-y-3">
           {top && (
             <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 180 }}
               className="border-3 border-paper-900 rounded-3xl shadow-sticker p-5 bg-sticker-yellow text-center tilt-r-sm">
