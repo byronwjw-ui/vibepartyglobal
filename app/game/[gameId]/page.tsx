@@ -6,6 +6,8 @@ import { usePartyStore } from '@/store/usePartyStore';
 import AppShell from '@/components/AppShell';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
+
+// 原有 16 个
 import OracleBookGame from './games/OracleBookGame';
 import TruthOrDareGame from './games/TruthOrDareGame';
 import NeverHaveIEverGame from './games/NeverHaveIEverGame';
@@ -22,6 +24,20 @@ import KingsCommandGame from './games/KingsCommandGame';
 import UndercoverGame from './games/UndercoverGame';
 import SecretLocationGame from './games/SecretLocationGame';
 import MafiaLiteGame from './games/MafiaLiteGame';
+
+// 新增 12 个
+import ChainPoetGame from './games/ChainPoetGame';
+import ThreeSentenceGame from './games/ThreeSentenceGame';
+import TwoTruthsGame from './games/TwoTruthsGame';
+import GuessDoodleGame from './games/GuessDoodleGame';
+import PassBombGame from './games/PassBombGame';
+import TabooWordGame from './games/TabooWordGame';
+import RhythmClapGame from './games/RhythmClapGame';
+import HeartRadarGame from './games/HeartRadarGame';
+import SecretMailboxGame from './games/SecretMailboxGame';
+import CheersChainGame from './games/CheersChainGame';
+import PartyRpsGame from './games/PartyRpsGame';
+import BlindVoteGame from './games/BlindVoteGame';
 
 const REGISTRY: Record<string, React.ComponentType> = {
   'oracle-book': OracleBookGame,
@@ -40,6 +56,19 @@ const REGISTRY: Record<string, React.ComponentType> = {
   'undercover': UndercoverGame,
   'secret-location': SecretLocationGame,
   'mafia-lite': MafiaLiteGame,
+  // 新增
+  'chain-poet': ChainPoetGame,
+  'three-sentence': ThreeSentenceGame,
+  'two-truths': TwoTruthsGame,
+  'guess-doodle': GuessDoodleGame,
+  'pass-bomb': PassBombGame,
+  'taboo-word': TabooWordGame,
+  'rhythm-clap': RhythmClapGame,
+  'heart-radar': HeartRadarGame,
+  'secret-mailbox': SecretMailboxGame,
+  'cheers-chain': CheersChainGame,
+  'party-rps': PartyRpsGame,
+  'blind-vote': BlindVoteGame,
 };
 
 export default function GamePage() {
