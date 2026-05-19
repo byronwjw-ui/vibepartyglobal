@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GameLayout from '@/components/GameLayout';
 import NeonButton from '@/components/NeonButton';
@@ -8,6 +8,7 @@ import { TRUTHS, DARES } from '@/data/zh-CN/truthOrDare';
 import { pick, randomId } from '@/lib/random';
 import { usePartyStore } from '@/store/usePartyStore';
 import { useTurn } from '@/lib/useTurn';
+import { filterByModeAndLevel } from '@/lib/modeFilter';
 
 type Mode = 'truth' | 'dare' | 'random';
 
@@ -17,29 +18,32 @@ export default function TruthOrDareGame() {
   const { current, next } = useTurn(players);
   const [picked, setPicked] = useState<{ k: string; mode: 'truth' | 'dare'; text: string } | null>(null);
 
+  const truthsPool = useMemo(() => filterByModeAndLevel(TRUTHS, settings.mode, settings.contentLevel), [settings.mode, settings.contentLevel]);
+  const daresPool  = useMemo(() => filterByModeAndLevel(DARES,  settings.mode, settings.contentLevel), [settings.mode, settings.contentLevel]);
+
   const draw = (mode: Mode) => {
     const actual: 'truth' | 'dare' = mode === 'random' ? (Math.random() < 0.5 ? 'truth' : 'dare') : mode;
-    const pool = actual === 'truth' ? TRUTHS : DARES;
-    const filtered = pool.filter((p) => settings.contentLevel === 'spicy' ? true : p.level !== 'spicy');
-    const card = pick(filtered.length ? filtered : pool);
+    const pool = actual === 'truth' ? truthsPool : daresPool;
+    const fallback = actual === 'truth' ? TRUTHS : DARES;
+    const card = pick(pool.length ? pool : fallback);
     setPicked({ k: randomId(), mode: actual, text: card.text });
   };
 
   return (
-    <GameLayout title="Truth or Dare 真心话大冒险" currentPlayer={current?.name} rules="选择真心话、大冒险或随机。可随时跳过。">
+    <GameLayout title="真心话大冒险 🔥" currentPlayer={current?.name} rules="选择真心话、大冒险或随机。可随时跳过。">
       <AnimatePresence mode="wait">
         {!picked ? (
           <motion.div key="pick" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="py-8 space-y-3">
-            <div className="text-center text-white/70 mb-2">{current?.name} 选择一项</div>
+            <div className="text-center font-bold text-paper-900/70 mb-2">{current?.name} 选择一项</div>
             <NeonButton full size="lg" onClick={() => draw('truth')}>真心话</NeonButton>
             <NeonButton full size="lg" variant="secondary" onClick={() => draw('dare')}>大冒险</NeonButton>
             <NeonButton full size="lg" variant="ghost" onClick={() => draw('random')}>交给运气</NeonButton>
           </motion.div>
         ) : (
           <motion.div key={picked.k} initial={{ opacity: 0, rotateX: -20 }} animate={{ opacity: 1, rotateX: 0 }} exit={{ opacity: 0 }} className="py-6">
-            <div className="glass p-6">
-              <div className="text-xs text-white/60 mb-2">{picked.mode === 'truth' ? '真心话' : '大冒险'} · 轮到 {current?.name}</div>
-              <div className="text-xl font-bold leading-relaxed">{picked.text}</div>
+            <div className="sticker p-6">
+              <div className="text-xs font-bold text-paper-900/70 mb-2">{picked.mode === 'truth' ? '真心话' : '大冒险'} · 轮到 {current?.name}</div>
+              <div className="text-xl font-black doodle-title leading-relaxed">{picked.text}</div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <SkipButton onClick={() => { setPicked(null); next(); }} label="跳过" />

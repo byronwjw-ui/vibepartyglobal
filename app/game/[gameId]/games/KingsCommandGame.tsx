@@ -7,11 +7,13 @@ import SkipButton from '@/components/SkipButton';
 import { KING_COMMANDS } from '@/data/zh-CN/kingCommands';
 import { pick, randomInt, shuffle } from '@/lib/random';
 import { usePartyStore } from '@/store/usePartyStore';
+import { localizeDrinkCopy } from '@/lib/modeFilter';
 
 type Phase = 'assign' | 'view' | 'reveal' | 'command' | 'done';
 
 export default function KingsCommandGame() {
   const players = usePartyStore((s) => s.players);
+  const settings = usePartyStore((s) => s.settings);
   const [phase, setPhase] = useState<Phase>('assign');
   const [numbers, setNumbers] = useState<number[]>([]);
   const [kingNumber, setKingNumber] = useState<number>(0);
@@ -45,30 +47,30 @@ export default function KingsCommandGame() {
     const slots = ['a','b','c'];
     let t = command.text;
     command.targets.forEach((n, i) => { t = t.replace(`{${slots[i]}}`, String(n)); });
-    return t;
-  }, [command]);
+    return localizeDrinkCopy(t, settings.mode, settings.drinkingEnabled);
+  }, [command, settings.mode, settings.drinkingEnabled]);
 
   return (
-    <GameLayout title="King's Command 国王指令" rules="手机轮流查看编号，公布国王后按编号执行。可拒绝。">
+    <GameLayout title="国王指令 👑" rules="手机轮流查看编号，公布国王后按编号执行。可拒绝。">
       <AnimatePresence mode="wait">
         {phase === 'assign' && (
           <motion.div key="a" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-6 text-center space-y-4">
-            <div className="text-5xl">👑</div>
-            <div className="text-white/70">为 {players.length} 位玩家随机分配编号和国王</div>
+            <div className="text-6xl">👑</div>
+            <div className="font-bold text-paper-900/70">为 {players.length} 位玩家随机分配编号和国王</div>
             <NeonButton full size="lg" onClick={assign}>开始分配</NeonButton>
           </motion.div>
         )}
         {phase === 'view' && (
           <motion.div key="v" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-6 text-center space-y-4">
-            <div className="text-sm text-white/60">轮到：<b>{players[viewIdx]?.name}</b></div>
-            <div className="glass p-8 min-h-[180px] grid place-items-center">
+            <div className="text-sm font-bold text-paper-900/70">轮到：<b>{players[viewIdx]?.name}</b></div>
+            <div className="sticker p-8 min-h-[180px] grid place-items-center">
               {!shown ? (
-                <div><div className="text-white/70 mb-3">手机传给 {players[viewIdx]?.name}</div><NeonButton onClick={() => setShown(true)}>查看我的编号</NeonButton></div>
+                <div><div className="font-bold text-paper-900/70 mb-3">手机传给 {players[viewIdx]?.name}</div><NeonButton onClick={() => setShown(true)}>查看我的编号</NeonButton></div>
               ) : (
                 <div>
-                  <div className="text-xs text-white/60">你的编号</div>
-                  <div className="text-6xl font-black neon-text mt-1">{numbers[viewIdx]}</div>
-                  {numbers[viewIdx] === kingNumber && <div className="mt-2 text-neon-orange font-semibold">你是国王 👑</div>}
+                  <div className="text-xs font-bold text-paper-900/70">你的编号</div>
+                  <div className="text-6xl font-black doodle-title mt-1">{numbers[viewIdx]}</div>
+                  {numbers[viewIdx] === kingNumber && <div className="mt-2 font-black text-sticker-orange">你是国王 👑</div>}
                 </div>
               )}
             </div>
@@ -81,17 +83,17 @@ export default function KingsCommandGame() {
         {phase === 'reveal' && (
           <motion.div key="r" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }} className="py-6 text-center space-y-4">
             <div className="text-6xl">👑</div>
-            <div className="text-white/70">今晚的国王是</div>
-            <div className="text-5xl font-black neon-text">{kingNumber} 号</div>
-            <div className="text-sm text-white/60">{players[numbers.findIndex((n) => n === kingNumber)]?.name}</div>
+            <div className="font-bold text-paper-900/70">今晚的国王是</div>
+            <div className="text-5xl font-black doodle-title">{kingNumber} 号</div>
+            <div className="text-sm font-bold text-paper-900/60">{players[numbers.findIndex((n) => n === kingNumber)]?.name}</div>
             <NeonButton full size="lg" onClick={drawCommand}>抽取指令</NeonButton>
           </motion.div>
         )}
         {phase === 'command' && command && (
           <motion.div key="c" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="py-6 space-y-4">
-            <div className="glass p-6">
-              <div className="text-xs text-white/60 mb-2">国王指令</div>
-              <div className="text-xl font-bold leading-relaxed">{renderedText}</div>
+            <div className="sticker p-6">
+              <div className="text-xs font-bold text-paper-900/70 mb-2">国王指令</div>
+              <div className="text-xl font-black doodle-title leading-relaxed">{renderedText}</div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <SkipButton onClick={drawCommand} label="换一条" />
@@ -101,7 +103,7 @@ export default function KingsCommandGame() {
         )}
         {phase === 'done' && (
           <motion.div key="d" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center space-y-3">
-            <div className="text-white/70">本轮结束</div>
+            <div className="font-bold text-paper-900/70">本轮结束</div>
             <NeonButton full size="lg" onClick={() => { setPhase('assign'); setCommand(null); }}>再来一轮</NeonButton>
           </motion.div>
         )}
