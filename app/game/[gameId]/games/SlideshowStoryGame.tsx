@@ -4,12 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GameLayout from '@/components/GameLayout';
 import GlassCard from '@/components/GlassCard';
 import NeonButton from '@/components/NeonButton';
+import HandoffScreen from '@/components/HandoffScreen';
+import PhaseProgress from '@/components/PhaseProgress';
+import ShareResultCard from '@/components/ShareResultCard';
 import { usePartyStore } from '@/store/usePartyStore';
 import { STORY_OPENERS } from '@/data/zh-CN/storyOpeners';
 import { pick } from '@/lib/random';
 import { Camera, ImagePlus } from 'lucide-react';
 
-type Phase = 'intro' | 'turn' | 'slideshow';
+type Phase = 'intro' | 'handoff' | 'turn' | 'slideshow' | 'album';
 interface Slide { playerId: string; line: string; image: string | null; }
 
 export default function SlideshowStoryGame() {
@@ -26,7 +29,7 @@ export default function SlideshowStoryGame() {
   const start = () => {
     setOpener(pick(STORY_OPENERS));
     setSlides([]); setTurnIdx(0); setLine(''); setImage(null); setShowIdx(0);
-    setPhase('turn');
+    setPhase('handoff');
   };
 
   const onPick = (file: File | null) => {
@@ -43,14 +46,18 @@ export default function SlideshowStoryGame() {
     const nextSlides = [...slides, next];
     setSlides(nextSlides);
     setLine(''); setImage(null);
-    if (turnIdx < players.length - 1) setTurnIdx(turnIdx + 1);
-    else { setShowIdx(0); setPhase('slideshow'); }
+    if (turnIdx < players.length - 1) {
+      setTurnIdx(turnIdx + 1);
+      setPhase('handoff');
+    } else {
+      setShowIdx(0); setPhase('slideshow');
+    }
   };
 
   if (phase === 'intro') {
     return (
-      <GameLayout title="故事接龙 · 一句一图 📸" subtitle="每人接一句故事，配一张现场拍的照片">
-        <div className="px-4 space-y-3">
+      <GameLayout title="故事接龙·一句一图 📸" subtitle="每人接一句故事，配一张现场拍的照片">
+        <div className="space-y-3">
           <GlassCard tone="lime">
             <div className="font-black text-lg">玩法</div>
             <ol className="mt-2 text-sm font-bold text-paper-900/85 space-y-1">
@@ -66,12 +73,32 @@ export default function SlideshowStoryGame() {
     );
   }
 
+  if (phase === 'handoff') {
+    const p = players[turnIdx];
+    return (
+      <>
+        <GameLayout title="故事接龙" subtitle={`即将进入：${p?.name}`}>
+          <PhaseProgress value={turnIdx} total={players.length} label={`已接 ${turnIdx} / ${players.length} 句`} tone="lime" />
+        </GameLayout>
+        {p && (
+          <HandoffScreen
+            open
+            nextPlayerName={p.name}
+            hint="接一句故事 + 拍一张照"
+            onDone={() => setPhase('turn')}
+          />
+        )}
+      </>
+    );
+  }
+
   if (phase === 'turn') {
     const p = players[turnIdx];
     const last = slides[slides.length - 1];
     return (
       <GameLayout title="接龙中" subtitle={`${p?.name} · 第 ${turnIdx + 1} / ${players.length} 句`}>
-        <div className="px-4 space-y-3">
+        <div className="space-y-3">
+          <PhaseProgress value={turnIdx + 1} total={players.length} label="本轮进度" tone="lime" />
           <GlassCard tone="yellow">
             <div className="text-xs font-black text-paper-900/60">上一句</div>
             <div className="mt-1 font-black text-paper-900">{last ? last.line : opener}</div>
@@ -95,14 +122,18 @@ export default function SlideshowStoryGame() {
               </button>
             </div>
             {image && (
-              <div className="mt-3 rounded-2xl border-3 border-paper-900 overflow-hidden">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="mt-3 rounded-2xl border-3 border-paper-900 overflow-hidden"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={image} alt="slide" className="w-full max-h-64 object-cover" />
-              </div>
+              </motion.div>
             )}
             <div className="mt-3 grid grid-cols-2 gap-2">
               <NeonButton full variant="secondary" onClick={() => { setLine(''); setImage(null); }}>重写</NeonButton>
-              <NeonButton full onClick={submit}>提交 →</NeonButton>
+              <NeonButton full onClick={submit}>✓ 提交 →</NeonButton>
             </div>
           </GlassCard>
         </div>
@@ -114,11 +145,18 @@ export default function SlideshowStoryGame() {
     const slide = slides[showIdx];
     const p = players.find((x) => x.id === slide?.playerId);
     return (
-      <GameLayout title="今晚的故事" subtitle={`${showIdx + 1} / ${slides.length}`}>
-        <div className="px-4 space-y-3">
+      <GameLayout title="今晚的故事 🎦" subtitle={`${showIdx + 1} / ${slides.length}`}>
+        <div className="space-y-3">
+          <PhaseProgress value={showIdx + 1} total={slides.length} label="幻灯片" tone="lime" />
           <AnimatePresence mode="wait">
-            <motion.div key={showIdx} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-              className="rounded-3xl border-3 border-paper-900 shadow-sticker overflow-hidden bg-paper-50">
+            <motion.div
+              key={showIdx}
+              initial={{ opacity: 0, x: 30, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 180 }}
+              className="rounded-3xl border-3 border-paper-900 shadow-sticker overflow-hidden bg-paper-50"
+            >
               {slide?.image ? (
                 <>{/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={slide.image} alt="slide" className="w-full max-h-80 object-cover" />
@@ -133,13 +171,53 @@ export default function SlideshowStoryGame() {
             </motion.div>
           </AnimatePresence>
           <div className="grid grid-cols-2 gap-3">
-            <NeonButton full variant="secondary" disabled={showIdx === 0} onClick={() => setShowIdx(showIdx - 1)}>上一张</NeonButton>
+            <NeonButton full variant="secondary" disabled={showIdx === 0} onClick={() => setShowIdx(showIdx - 1)}>← 上一张</NeonButton>
             {showIdx < slides.length - 1 ? (
-              <NeonButton full onClick={() => setShowIdx(showIdx + 1)}>下一张</NeonButton>
+              <NeonButton full onClick={() => setShowIdx(showIdx + 1)}>下一张 →</NeonButton>
             ) : (
-              <NeonButton full onClick={start}>再来一轮</NeonButton>
+              <NeonButton full onClick={() => setPhase('album')}>📖 看整本相册</NeonButton>
             )}
           </div>
+          <NeonButton full variant="ghost" size="sm" onClick={start}>🔄 再来一个故事</NeonButton>
+        </div>
+      </GameLayout>
+    );
+  }
+
+  if (phase === 'album') {
+    const fullStory = `📖 今晚的故事\n\n${opener}\n${slides.map((s) => s.line).join('\n')}\n\nvibepartyglobal.vercel.app`;
+    return (
+      <GameLayout title="整本相册" subtitle="今晚的故事 + 现场照">
+        <ShareResultCard shareText={fullStory} filename="story-album.png">
+          <div className="space-y-3 p-3 rounded-3xl bg-paper-50 border-3 border-paper-900">
+            <div className="text-center sticker p-3 bg-sticker-lime">
+              <div className="text-3xl">📖</div>
+              <div className="text-xs font-black text-paper-900/70 mt-1">今晚的故事</div>
+            </div>
+            <div className="sticker p-3 bg-sticker-yellow text-sm font-bold text-paper-900">
+              {opener}
+            </div>
+            {slides.map((s, i) => {
+              const p = players.find((x) => x.id === s.playerId);
+              return (
+                <div key={i} className="border-3 border-paper-900 rounded-2xl shadow-sticker-sm overflow-hidden bg-paper-100">
+                  {s.image && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={s.image} alt="" className="w-full max-h-48 object-cover" />
+                  )}
+                  <div className="p-2">
+                    <div className="text-[11px] font-black text-paper-900/60">{p?.name}</div>
+                    <div className="font-bold text-paper-900 text-sm mt-0.5">{s.line}</div>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="text-center text-[10px] font-bold text-paper-900/50">vibepartyglobal.vercel.app</div>
+          </div>
+        </ShareResultCard>
+        <div className="pt-3 grid grid-cols-2 gap-3">
+          <NeonButton full variant="secondary" onClick={() => setPhase('slideshow')}>← 回到幻灯片</NeonButton>
+          <NeonButton full onClick={start}>🔄 再来一个</NeonButton>
         </div>
       </GameLayout>
     );
