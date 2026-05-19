@@ -13,13 +13,23 @@ export default function AboutPage() {
         </GlassCard>
         <GlassCard>
           <ul className="text-sm font-semibold space-y-1 text-paper-900/90">
-            <li>当前版本：v0.3 MVP</li>
+            <li>当前版本：v0.4 打磨版</li>
             <li>语言：中文</li>
             <li>模式：完全免费试玩版</li>
             <li>游戏数：32 款（含·派对实验室）</li>
           </ul>
         </GlassCard>
         <GlassCard tone="cyan">
+          <div className="font-black">近期更新</div>
+          <ul className="mt-2 text-sm font-semibold space-y-1 text-paper-900/90">
+            <li>· 传手机仪式页：VibeType / 谁是 AI / 谁是卧底 / 黑手党 / 故事接龙</li>
+            <li>· 揭晓动画升级：谁最可能 · 谁是 AI</li>
+            <li>· 结果可保存为图片：VibeType / 谁最可能 / 故事相册</li>
+            <li>· 首页“今晚先玩”智能推荐</li>
+            <li>· 跳过按钮 / 空状态统一规范</li>
+          </ul>
+        </GlassCard>
+        <GlassCard tone="yellow">
           <div className="font-black">未来计划</div>
           <ul className="mt-2 text-sm font-semibold space-y-1 text-paper-900/90">
             <li>· 英文 / 多语言版</li>
