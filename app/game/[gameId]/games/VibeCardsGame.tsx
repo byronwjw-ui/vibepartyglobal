@@ -19,7 +19,7 @@ const TYPE_META: Record<VibeCard['type'], { label: string; emoji: string; tone: 
   rule:      { label: '规则', emoji: '📏', tone: 'bg-sticker-yellow' },
   flip:      { label: '反转', emoji: '🔄', tone: 'bg-sticker-orange' },
   shield:    { label: '保护', emoji: '🛡️', tone: 'bg-paper-50' },
-  all:       { label: '全员', emoji: '🎉', tone: 'bg-sticker-mint' },
+  all:       { label: '全员', emoji: '🎉', tone: 'bg-sticker-lime' },
 };
 
 export default function VibeCardsGame() {
