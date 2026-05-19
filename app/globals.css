@@ -2,32 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; }
+:root { color-scheme: light; }
 
 html, body {
-  background: #0B0614;
-  color: #F5F3FF;
+  background: #FFFBF0;
+  color: #161312;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
 
 body {
   min-height: 100dvh;
+  background-color: #FFFBF0;
   background-image:
-    radial-gradient(60% 40% at 20% 0%, rgba(139,92,246,0.25), transparent 60%),
-    radial-gradient(50% 35% at 80% 10%, rgba(255,45,170,0.22), transparent 60%),
-    radial-gradient(60% 50% at 50% 100%, rgba(34,211,238,0.18), transparent 60%),
-    linear-gradient(180deg, #0B0614 0%, #12001F 60%, #071426 100%);
+    radial-gradient(60% 40% at 18% 8%,  rgba(255,176,32,0.30), transparent 60%),
+    radial-gradient(50% 35% at 85% 12%, rgba(255,45,143,0.22), transparent 60%),
+    radial-gradient(55% 40% at 80% 85%, rgba(93,200,255,0.25), transparent 60%),
+    radial-gradient(50% 40% at 15% 90%, rgba(155,227,109,0.25), transparent 60%),
+    radial-gradient(#16131214 1px, transparent 1px);
+  background-size: auto, auto, auto, auto, 22px 22px;
   background-attachment: fixed;
 }
 
 @layer components {
-  .glass { @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl; }
-  .neon-text { background: linear-gradient(135deg,#FF2DAA,#8B5CF6 50%,#22D3EE); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  /* 贴纸卡：白底 + 黑描边 + 偏移阴影 */
+  .sticker {
+    @apply bg-paper-100 border-3 border-paper-900 rounded-3xl shadow-sticker;
+  }
+  .sticker-sm {
+    @apply bg-paper-100 border-3 border-paper-900 rounded-2xl shadow-sticker-sm;
+  }
+  /* 兼容旧 glass 类名 */
+  .glass {
+    @apply bg-paper-100 border-3 border-paper-900 rounded-3xl shadow-sticker;
+  }
+  /* 标题渐变文字 */
+  .neon-text {
+    background: linear-gradient(135deg,#FF2D8F 0%, #FFB020 50%, #5DC8FF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-stroke: 0;
+  }
+  /* 手写感大标题 */
+  .doodle-title {
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    text-shadow: 3px 3px 0 #161312;
+  }
+  /* 轻微随机旋转工具类 */
+  .tilt-l { transform: rotate(-2deg); }
+  .tilt-r { transform: rotate(2deg); }
+  .tilt-l-sm { transform: rotate(-1deg); }
+  .tilt-r-sm { transform: rotate(1deg); }
+
   .safe-area { padding-bottom: env(safe-area-inset-bottom); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
+
+  /* 贴纸按钮按下 */
+  .press-down { transition: transform .08s ease, box-shadow .08s ease; }
+  .press-down:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 0 #161312 !important; }
 }
 
 button:focus { outline: none; }
-button:focus-visible { outline: 2px solid #22D3EE; outline-offset: 2px; }
+button:focus-visible { outline: 3px solid #161312; outline-offset: 3px; }
+
+/* 输入框默认皮肤 */
+input, textarea, select {
+  color: #161312;
+}
+input::placeholder, textarea::placeholder { color: #16131266; }

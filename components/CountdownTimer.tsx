@@ -1,23 +1,20 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/cn';
 
-export default function CountdownTimer({ seconds, onDone, running = true, className }: { seconds: number; onDone?: () => void; running?: boolean; className?: string }) {
+export default function CountdownTimer({ seconds, running, onEnd }: { seconds: number; running: boolean; onEnd?: () => void }) {
   const [left, setLeft] = useState(seconds);
-  const ref = useRef<number | null>(null);
   useEffect(() => { setLeft(seconds); }, [seconds]);
   useEffect(() => {
     if (!running) return;
-    ref.current = window.setInterval(() => {
-      setLeft((v) => {
-        if (v <= 1) { window.clearInterval(ref.current!); onDone?.(); return 0; }
-        return v - 1;
-      });
-    }, 1000);
-    return () => { if (ref.current) window.clearInterval(ref.current); };
-  }, [running, onDone]);
-  const critical = left <= 3;
+    if (left <= 0) { onEnd?.(); return; }
+    const t = setTimeout(() => setLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left, running, onEnd]);
+  const danger = left <= 3;
   return (
-    <div className={cn('text-6xl font-black tabular-nums', critical ? 'text-neon-pink animate-pulse' : 'text-white', className)}>{left}</div>
+    <div className={cn('inline-grid place-items-center h-16 w-16 rounded-full border-3 border-paper-900 font-black text-2xl shadow-sticker-sm', danger ? 'bg-sticker-red text-paper-900 animate-wiggle' : 'bg-sticker-yellow text-paper-900')}>
+      {left}
+    </div>
   );
 }

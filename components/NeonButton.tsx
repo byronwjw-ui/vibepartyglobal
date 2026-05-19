@@ -11,26 +11,31 @@ interface Props extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onA
 }
 
 const variantCls: Record<Variant, string> = {
-  primary: 'bg-neon-grad text-white shadow-neon',
-  secondary: 'bg-white/10 text-white border border-white/15 backdrop-blur-md',
-  ghost: 'bg-transparent text-white/80 hover:text-white',
-  danger: 'bg-red-500/90 text-white',
+  primary:   'bg-sticker-yellow text-paper-900',
+  secondary: 'bg-paper-50 text-paper-900',
+  ghost:     'bg-transparent text-paper-900',
+  danger:    'bg-sticker-red text-paper-900',
 };
 const sizeCls: Record<Size, string> = {
-  sm: 'h-9 px-4 text-sm rounded-xl',
+  sm: 'h-10 px-4 text-sm rounded-2xl',
   md: 'h-12 px-5 text-base rounded-2xl',
   lg: 'h-14 px-6 text-lg rounded-2xl',
 };
 
+/** 贴纸风按钮：粗黑描边 + 偏移阴影 + 按下贴到底 */
 const NeonButton = forwardRef<HTMLButtonElement, Props>(function NeonButton(
   { variant = 'primary', size = 'md', full, className, children, ...rest }, ref
 ) {
+  const isGhost = variant === 'ghost';
   return (
     <motion.button
       ref={ref}
-      whileTap={{ scale: 0.96 }}
-      whileHover={{ scale: 1.01 }}
-      className={cn('font-semibold tracking-wide select-none active:opacity-90 inline-flex items-center justify-center gap-2', variantCls[variant], sizeCls[size], full && 'w-full', className)}
+      whileTap={{ scale: 0.97 }}
+      className={cn(
+        'font-extrabold tracking-wide select-none inline-flex items-center justify-center gap-2 press-down',
+        !isGhost && 'border-3 border-paper-900 shadow-sticker',
+        variantCls[variant], sizeCls[size], full && 'w-full', className
+      )}
       {...(rest as any)}
     >
       {children}
