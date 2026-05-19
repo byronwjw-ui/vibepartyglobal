@@ -28,7 +28,7 @@ export default function TruthOrDareGame() {
   const daresPool  = useMemo(() => filterByModeAndLevel(DARES,  settings.mode, settings.contentLevel), [settings.mode, settings.contentLevel]);
 
   const draw = (mode: Mode) => {
-    vibrate(15);
+    if (settings.vibrationEnabled) vibrate(15);
     const actual: 'truth' | 'dare' = mode === 'random' ? (Math.random() < 0.5 ? 'truth' : 'dare') : mode;
     const pool = actual === 'truth' ? truthsPool : daresPool;
     const fallback = actual === 'truth' ? TRUTHS : DARES;
