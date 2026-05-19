@@ -23,37 +23,24 @@ export default function OracleBookGame() {
   };
 
   return (
-    <GameLayout title="Oracle Book 答案之书" rules="心里默念一个问题，再翻开答案。">
+    <GameLayout title="答案之书 🔮" rules="心里默念一个问题，再翻开答案。">
       <div className="grid place-items-center py-6">
-        <div className="text-center text-sm text-white/60 mb-4">先在心里默念一个问题</div>
+        <div className="text-center text-sm text-paper-900/70 mb-4 font-bold">先在心里默念一个问题</div>
         <div className="relative w-full max-w-sm aspect-[3/4]">
           <AnimatePresence mode="wait">
             {!answer ? (
-              <motion.div
-                key="cover"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, rotateY: 90 }}
-                transition={{ duration: 0.35 }}
-                className="absolute inset-0 glass grid place-items-center text-center p-8"
-                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(34,211,238,0.15))' }}
-              >
+              <motion.div key="cover" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, rotateY: 90 }} transition={{ duration: 0.35 }}
+                className="absolute inset-0 sticker grid place-items-center text-center p-8 bg-sticker-purple/30">
                 <div>
-                  <div className="text-5xl mb-3">🔮</div>
-                  <div className="text-xl font-black neon-text">Oracle Book</div>
-                  <div className="text-xs text-white/60 mt-2">让它替你回答</div>
+                  <div className="text-6xl mb-3">🔮</div>
+                  <div className="text-2xl font-black doodle-title">答案之书</div>
+                  <div className="text-xs text-paper-900/70 mt-2 font-bold">让它替你回答</div>
                 </div>
               </motion.div>
             ) : (
-              <motion.div
-                key={answer.k}
-                initial={{ opacity: 0, rotateY: -90 }}
-                animate={{ opacity: 1, rotateY: 0 }}
-                exit={{ opacity: 0, rotateY: 90 }}
-                transition={{ duration: 0.45 }}
-                className="absolute inset-0 glass grid place-items-center p-8 text-center"
-              >
-                <div className="text-xl leading-relaxed font-semibold">{answer.t}</div>
+              <motion.div key={answer.k} initial={{ opacity: 0, rotateY: -90 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0, rotateY: 90 }} transition={{ duration: 0.45 }}
+                className="absolute inset-0 sticker grid place-items-center p-8 text-center bg-sticker-yellow">
+                <div className="text-xl leading-relaxed font-black doodle-title">{answer.t}</div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -61,12 +48,8 @@ export default function OracleBookGame() {
       </div>
 
       <div className="mt-6 flex gap-2">
-        <NeonButton full size="lg" onClick={reveal} disabled={flipping}>
-          {answer ? '再翻一次' : '翻开答案'}
-        </NeonButton>
-        {answer && (
-          <NeonButton variant="secondary" size="lg" onClick={() => setAnswer(null)}>合上</NeonButton>
-        )}
+        <NeonButton full size="lg" onClick={reveal} disabled={flipping}>{answer ? '再翻一次' : '翻开答案'}</NeonButton>
+        {answer && <NeonButton variant="secondary" size="lg" onClick={() => setAnswer(null)}>合上</NeonButton>}
       </div>
     </GameLayout>
   );

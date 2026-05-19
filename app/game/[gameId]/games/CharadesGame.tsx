@@ -30,34 +30,30 @@ export default function CharadesGame() {
   const nextWord = () => { const c = pick(CHARADES); setWord({ k: randomId(), w: c.word, c: c.category }); };
   const onCorrect = () => { setRound((r) => ({ ...r, correct: r.correct + 1 })); nextWord(); };
   const onSkip = () => { setRound((r) => ({ ...r, skip: r.skip + 1 })); nextWord(); };
-  const onDone = () => {
-    if (actorId) bumpScore(actorId, round.correct);
-    setRunning(false);
-    setWord(null);
-  };
+  const onDone = () => { if (actorId) bumpScore(actorId, round.correct); setRunning(false); setWord(null); };
 
   return (
-    <GameLayout title="Charades 你演我猜" rules="表演者只能表演不能说话，其他人猜。默认 60 秒。">
+    <GameLayout title="你演我猜 🎭" rules="表演者只能表演不能说话，其他人猜。默认 60 秒。">
       {!running ? (
         <div className="py-4 space-y-4">
-          <div className="text-sm text-white/60">选一位表演者</div>
+          <div className="text-sm font-bold text-paper-900/70">选一位表演者</div>
           <PlayerSelector players={players} selectedId={actorId || undefined} onSelect={setActorId} />
           <NeonButton full size="lg" disabled={!actorId} onClick={start}>开始表演</NeonButton>
           <ScoreBoard players={players} />
         </div>
       ) : (
         <div className="py-4 space-y-4">
-          <div className="text-center"><CountdownTimer seconds={60} onDone={onDone} /></div>
-          <motion.div key={word?.k} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="glass p-8 text-center">
-            <div className="text-xs text-white/60">{word?.c}</div>
-            <div className="text-4xl font-black neon-text mt-2">{word?.w}</div>
-            <div className="text-xs text-white/50 mt-2">表演者：{actor?.name}</div>
+          <div className="grid place-items-center"><CountdownTimer seconds={60} running onEnd={onDone} /></div>
+          <motion.div key={word?.k} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="sticker p-8 text-center bg-sticker-cyan">
+            <div className="text-xs font-bold text-paper-900/70">{word?.c}</div>
+            <div className="text-4xl font-black doodle-title mt-2">{word?.w}</div>
+            <div className="text-xs font-bold text-paper-900/65 mt-2">表演者：{actor?.name}</div>
           </motion.div>
           <div className="grid grid-cols-2 gap-2">
             <NeonButton variant="secondary" size="lg" onClick={onSkip}>跳过</NeonButton>
             <NeonButton size="lg" onClick={onCorrect}>猜对 +1</NeonButton>
           </div>
-          <div className="text-center text-xs text-white/60">本轮猜对 {round.correct} · 跳过 {round.skip}</div>
+          <div className="text-center text-xs font-bold text-paper-900/70">本轮猜对 {round.correct} · 跳过 {round.skip}</div>
           <NeonButton full variant="ghost" onClick={onDone}>提前结束本轮</NeonButton>
         </div>
       )}
