@@ -13,8 +13,6 @@ type Phase = 'setup' | 'view' | 'night-mafia' | 'night-doctor' | 'night-detectiv
 interface Assignment { playerId: string; role: Role; alive: boolean; }
 
 function rolesForN(n: number): Role[] {
-  // 5: mafia 1 / doctor 1 / detective 1 / civilian 2
-  // 6-8: mafia 2 / doctor 1 / detective 1 / rest civilian
   const mafias = n >= 6 ? 2 : 1;
   const arr: Role[] = [];
   for (let i = 0; i < mafias; i++) arr.push('mafia');
@@ -24,18 +22,8 @@ function rolesForN(n: number): Role[] {
   return shuffle(arr);
 }
 
-const ROLE_LABEL: Record<Role, string> = {
-  mafia: '黑手党',
-  doctor: '医生',
-  detective: '警探',
-  civilian: '平民',
-};
-const ROLE_DESC: Record<Role, string> = {
-  mafia: '夜晚选择一名玩家作为目标。',
-  doctor: '夜晚选择一名玩家保护，可保护自己。',
-  detective: '夜晚选择一名玩家查验阵营。',
-  civilian: '白天讨论，找出黑手党。',
-};
+const ROLE_LABEL: Record<Role, string> = { mafia: '黑手党', doctor: '医生', detective: '警探', civilian: '平民' };
+const ROLE_DESC:  Record<Role, string> = { mafia: '夜晚选择一名玩家作为目标。', doctor: '夜晚选择一名玩家保护，可保护自己。', detective: '夜晚选择一名玩家查验阵营。', civilian: '白天讨论，找出黑手党。' };
 
 export default function MafiaLiteGame() {
   const players = usePartyStore((s) => s.players);
@@ -43,7 +31,6 @@ export default function MafiaLiteGame() {
   const [assigns, setAssigns] = useState<Assignment[]>([]);
   const [viewIdx, setViewIdx] = useState(0);
   const [shown, setShown] = useState(false);
-
   const [mafiaTarget, setMafiaTarget] = useState<string | null>(null);
   const [doctorTarget, setDoctorTarget] = useState<string | null>(null);
   const [detectiveTarget, setDetectiveTarget] = useState<string | null>(null);
@@ -113,26 +100,26 @@ export default function MafiaLiteGame() {
   };
 
   return (
-    <GameLayout title="Mafia Lite 黑手党极速版" rules="夜晚黑手党/医生/警探依次行动；白天讨论投票。出局/淘汰用语，无血腥。">
+    <GameLayout title="黑手党极速版 🌙" rules="夜晚黑手党/医生/警探依次行动；白天讨论投票。出局/淘汰用语，无血腥。">
       <AnimatePresence mode="wait">
         {phase === 'setup' && (
           <motion.div key="s" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-6 space-y-4 text-center">
             <div className="text-6xl">🌙</div>
-            <div className="text-white/70">{players.length} 人配置：{players.length >= 6 ? '2 黑手党' : '1 黑手党'} · 1 医生 · 1 警探 · 其余平民</div>
+            <div className="font-bold text-paper-900/75">{players.length} 人配置：{players.length >= 6 ? '2 黑手党' : '1 黑手党'} · 1 医生 · 1 警探 · 其余平民</div>
             <NeonButton full size="lg" onClick={start}>分配身份</NeonButton>
           </motion.div>
         )}
         {phase === 'view' && cur && (
           <motion.div key={'v' + viewIdx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-6 space-y-4 text-center">
-            <div className="text-sm text-white/60">轮到：<b>{curPlayer?.name}</b></div>
-            <div className="glass p-8 min-h-[180px] grid place-items-center">
+            <div className="text-sm font-bold text-paper-900/70">轮到：<b>{curPlayer?.name}</b></div>
+            <div className="sticker p-8 min-h-[180px] grid place-items-center bg-paper-50">
               {!shown ? (
-                <div><div className="text-white/70 mb-3">手机传给 {curPlayer?.name}</div><NeonButton onClick={() => setShown(true)}>查看我的身份</NeonButton></div>
+                <div><div className="font-bold text-paper-900/70 mb-3">手机传给 {curPlayer?.name}</div><NeonButton onClick={() => setShown(true)}>查看我的身份</NeonButton></div>
               ) : (
                 <div>
-                  <div className="text-xs text-white/60">你的身份</div>
-                  <div className="text-3xl font-black neon-text mt-2">{ROLE_LABEL[cur.role]}</div>
-                  <div className="text-xs text-white/60 mt-2">{ROLE_DESC[cur.role]}</div>
+                  <div className="text-xs font-bold text-paper-900/70">你的身份</div>
+                  <div className="text-3xl font-black doodle-title mt-2">{ROLE_LABEL[cur.role]}</div>
+                  <div className="text-xs font-bold text-paper-900/70 mt-2">{ROLE_DESC[cur.role]}</div>
                 </div>
               )}
             </div>
@@ -144,40 +131,56 @@ export default function MafiaLiteGame() {
         )}
         {phase === 'night-mafia' && (
           <motion.div key="nm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-4 space-y-4">
-            <div className="glass p-5 text-center"><div className="text-5xl mb-2">🌙</div><div className="text-white/80">夜晚 · 黑手党行动</div><div className="text-xs text-white/60 mt-1">{aliveMafiaPlayers.map((p) => p.name).join(' / ')} 醒来，选择目标。</div></div>
+            <div className="sticker p-5 text-center bg-sticker-purple/30">
+              <div className="text-5xl mb-2">🌙</div>
+              <div className="font-black text-paper-900/85">夜晚 · 黑手党行动</div>
+              <div className="text-xs font-bold text-paper-900/70 mt-1">{aliveMafiaPlayers.map((p) => p.name).join(' / ')} 醒来，选择目标。</div>
+            </div>
             <PlayerSelector players={alivePlayers((a) => a.role !== 'mafia')} selectedId={mafiaTarget || undefined} onSelect={setMafiaTarget}/>
             <NeonButton full size="lg" disabled={!mafiaTarget} onClick={() => setPhase(aliveDoctorPlayers.length ? 'night-doctor' : aliveDetectivePlayers.length ? 'night-detective' : 'day')}>确认 · 黑手党闭眼</NeonButton>
           </motion.div>
         )}
         {phase === 'night-doctor' && (
           <motion.div key="nd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-4 space-y-4">
-            <div className="glass p-5 text-center"><div className="text-5xl mb-2">💊</div><div className="text-white/80">夜晚 · 医生行动</div><div className="text-xs text-white/60 mt-1">{aliveDoctorPlayers.map((p) => p.name).join(' / ')} 醒来，选择保护对象。</div></div>
+            <div className="sticker p-5 text-center bg-sticker-lime">
+              <div className="text-5xl mb-2">💊</div>
+              <div className="font-black text-paper-900/85">夜晚 · 医生行动</div>
+              <div className="text-xs font-bold text-paper-900/70 mt-1">{aliveDoctorPlayers.map((p) => p.name).join(' / ')} 醒来，选择保护对象。</div>
+            </div>
             <PlayerSelector players={alivePlayers()} selectedId={doctorTarget || undefined} onSelect={setDoctorTarget}/>
             <NeonButton full size="lg" disabled={!doctorTarget} onClick={() => setPhase(aliveDetectivePlayers.length ? 'night-detective' : 'day')}>确认 · 医生闭眼</NeonButton>
           </motion.div>
         )}
         {phase === 'night-detective' && (
           <motion.div key="ndet" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-4 space-y-4">
-            <div className="glass p-5 text-center"><div className="text-5xl mb-2">🔎</div><div className="text-white/80">夜晚 · 警探行动</div><div className="text-xs text-white/60 mt-1">{aliveDetectivePlayers.map((p) => p.name).join(' / ')} 醒来，选择查验对象。</div></div>
+            <div className="sticker p-5 text-center bg-sticker-cyan">
+              <div className="text-5xl mb-2">🔎</div>
+              <div className="font-black text-paper-900/85">夜晚 · 警探行动</div>
+              <div className="text-xs font-bold text-paper-900/70 mt-1">{aliveDetectivePlayers.map((p) => p.name).join(' / ')} 醒来，选择查验对象。</div>
+            </div>
             <PlayerSelector players={alivePlayers((a) => a.role !== 'detective')} selectedId={detectiveTarget || undefined} onSelect={(id) => {
               setDetectiveTarget(id);
               const r = assigns.find((a) => a.playerId === id)?.role;
               setDetectiveResult(r === 'mafia' ? '是黑手党' : '不是黑手党');
             }}/>
-            {detectiveResult && <div className="glass p-4 text-center">查验结果：<b className="neon-text">{detectiveResult}</b></div>}
+            {detectiveResult && <div className="sticker p-4 text-center bg-paper-50 font-semibold">查验结果：<b className="doodle-title">{detectiveResult}</b></div>}
             <NeonButton full size="lg" disabled={!detectiveTarget} onClick={resolveNight}>确认 · 进入白天</NeonButton>
           </motion.div>
         )}
         {phase === 'day' && (
           <motion.div key="day" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-4 space-y-4">
-            <div className="glass p-5 text-center"><div className="text-5xl mb-2">☀️</div><div className="text-white/80">白天 · 公告</div><div className="text-sm text-white/70 mt-2">{nightOutcome}</div></div>
-            <div className="text-xs text-white/60">存活：{alive.length} 人 · 黑手党 {aliveMafia} · 其他 {aliveCivilianSide}</div>
+            <div className="sticker p-5 text-center bg-sticker-yellow">
+              <div className="text-5xl mb-2">☀️</div>
+              <div className="font-black text-paper-900/85">白天 · 公告</div>
+              <div className="text-sm font-bold text-paper-900/80 mt-2">{nightOutcome}</div>
+            </div>
+            <div className="text-xs font-bold text-paper-900/70">存活：{alive.length} 人 · 黑手党 {aliveMafia} · 其他 {aliveCivilianSide}</div>
             <NeonButton full size="lg" onClick={() => setPhase('vote')}>讨论完毕 · 进入投票</NeonButton>
           </motion.div>
         )}
         {phase === 'vote' && (
           <motion.div key="vote" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-4 space-y-4">
-            <div className="text-sm text-white/60">投票淘汰一名玩家</div>
+            <div className="text-sm font-bold text-paper-900/70">投票淘汰一名玩家</div>
             <PlayerSelector players={alivePlayers()} selectedId={voteId || undefined} onSelect={setVoteId}/>
             <NeonButton full size="lg" disabled={!voteId} onClick={doVote}>确认淘汰</NeonButton>
           </motion.div>
@@ -185,12 +188,12 @@ export default function MafiaLiteGame() {
         {phase === 'end' && (
           <motion.div key="end" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="py-6 space-y-4 text-center">
             <div className="text-6xl">{winner === 'mafia' ? '🌙' : '☀️'}</div>
-            <div className="text-3xl font-black neon-text">{winner === 'mafia' ? '黑手党胜利' : '平民阵营胜利'}</div>
-            <div className="glass p-4 text-left text-sm">
-              <div className="text-white/60 mb-2">身份揭晓</div>
+            <div className="text-3xl font-black doodle-title">{winner === 'mafia' ? '黑手党胜利' : '平民阵营胜利'}</div>
+            <div className="sticker p-4 text-left text-sm font-semibold bg-paper-50">
+              <div className="font-bold text-paper-900/70 mb-2">身份揭晓</div>
               {assigns.map((a) => {
                 const p = players.find((x) => x.id === a.playerId);
-                return <div key={a.playerId} className="flex justify-between py-1"><span>{p?.name}{!a.alive && <span className="text-white/40"> · 出局</span>}</span><b>{ROLE_LABEL[a.role]}</b></div>;
+                return <div key={a.playerId} className="flex justify-between py-1"><span>{p?.name}{!a.alive && <span className="text-paper-900/45"> · 出局</span>}</span><b>{ROLE_LABEL[a.role]}</b></div>;
               })}
             </div>
             <NeonButton full size="lg" onClick={() => setPhase('setup')}>再来一局</NeonButton>
