@@ -1,6 +1,9 @@
 export type PartyMode = 'friends' | 'icebreaker' | 'funny' | 'spicy' | 'sober' | 'drinking';
 export type ContentLevel = 'soft' | 'funny' | 'spicy';
 
+/** 题库标签：试题库默认拥有哪些聚会模式 */
+export type ModeTag = PartyMode | 'all';
+
 export interface Player {
   id: string;
   name: string;
@@ -29,6 +32,8 @@ export interface GameDefinition {
   duration: string;
   difficulty: '简单' | '中等' | '较难';
   tags: string[];
+  /** 该游戏在哪些模式中特别适合（用于排序加权） */
+  modeAffinity?: PartyMode[];
   icon: string;
   isPremium: boolean;
   enabled: boolean;
@@ -39,7 +44,7 @@ export interface ContentItem {
   gameId: string;
   text: string;
   level: ContentLevel;
-  modeTags: string[];
+  modeTags: ModeTag[];
   safetyLevel: 'safe' | 'mature';
 }
 

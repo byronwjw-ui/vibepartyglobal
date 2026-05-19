@@ -33,12 +33,18 @@ export default function SetupPage() {
       <main className="px-4 pb-32 space-y-6">
         <GlassCard>
           <div className="flex items-center gap-2">
-            <Users size={18} className="text-neon-cyan"/>
-            <div className="font-semibold">添加玩家</div>
-            <span className="ml-auto text-xs text-white/50">{players.length} 人</span>
+            <Users size={18}/>
+            <div className="font-black">加人玩🎉</div>
+            <span className="ml-auto text-xs font-bold text-paper-900/60">{players.length} 人</span>
           </div>
           <div className="mt-3 flex gap-2">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="输入昵称或随机" className="flex-1 h-11 px-3 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-neon-pink/60" maxLength={12}/>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="输入昵称或随机"
+              className="flex-1 h-11 px-3 rounded-2xl bg-paper-50 border-3 border-paper-900 outline-none focus:bg-sticker-yellow font-bold"
+              maxLength={12}
+            />
             <NeonButton size="md" onClick={() => { addPlayer(name); setName(''); }}><UserPlus size={16}/> 加入</NeonButton>
           </div>
           <div className="mt-3 flex gap-2">
@@ -52,12 +58,13 @@ export default function SetupPage() {
                 if (v && v.trim()) renamePlayer(p.id, v.trim().slice(0, 12));
               }}/>
             ))}
-            {!players.length && <div className="text-sm text-white/50">还没有玩家，点击上方按钮添加。</div>}
+            {!players.length && <div className="text-sm text-paper-900/60 font-semibold">还没有玩家，点击上方按钮添加。</div>}
           </div>
         </GlassCard>
 
-        <GlassCard>
-          <div className="font-semibold mb-3">选择聚会模式</div>
+        <GlassCard tone="yellow">
+          <div className="font-black mb-3">选个氛围眼神👀</div>
+          <div className="text-xs text-paper-900/70 font-semibold mb-3">不同模式会真的影响按题库、大厅顺序和主题色 — 不是装饰。</div>
           <ModeSelector value={settings.mode} onChange={(m) => {
             if (m === 'drinking' && !settings.ageConfirmed) {
               setSafetyOpen(true);
@@ -68,9 +75,9 @@ export default function SetupPage() {
           }}/>
         </GlassCard>
       </main>
-      <div className="sticky bottom-0 inset-x-0 px-4 pt-3 pb-6 bg-gradient-to-t from-ink-900 via-ink-900/95 to-transparent">
-        <NeonButton full size="lg" disabled={players.length < 2} onClick={() => router.push('/lobby')} className={players.length < 2 ? 'opacity-50' : ''}>
-          {players.length < 2 ? '至少需要 2 位玩家' : '进入游戏大厅'}
+      <div className="sticky bottom-0 inset-x-0 px-4 pt-3 pb-6 bg-gradient-to-t from-paper-50 via-paper-50/95 to-transparent">
+        <NeonButton full size="lg" disabled={players.length < 2} onClick={() => router.push('/lobby')} className={players.length < 2 ? 'opacity-60' : ''}>
+          {players.length < 2 ? '至少需要 2 位玩家' : '🚀 进入游戏大厅'}
         </NeonButton>
       </div>
       <SafetyModal open={safetyOpen} onConfirm={() => { setAgeConfirmed(true); setMode('drinking'); setDrinking(true); setSafetyOpen(false); }} onCancel={() => setSafetyOpen(false)} />

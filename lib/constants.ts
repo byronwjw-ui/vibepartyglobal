@@ -16,8 +16,8 @@ export const STORAGE_KEYS = {
 } as const;
 
 export const AVATAR_COLORS = [
-  '#FF2DAA','#8B5CF6','#22D3EE','#FB923C','#A3E635',
-  '#F472B6','#60A5FA','#FDE047','#34D399','#F87171',
+  '#FFD93D','#FF6FB8','#5DC8FF','#9BE36D','#FFB020',
+  '#9B6BFF','#FF7A59','#22D3BB','#FF5252','#4F86FF',
 ];
 
 export const PARTY_MODES: { id: PartyMode; label: string; desc: string; emoji: string }[] = [
@@ -28,3 +28,13 @@ export const PARTY_MODES: { id: PartyMode; label: string; desc: string; emoji: s
   { id: 'sober', label: '无酒精局', desc: '不喝酒也能很嗨', emoji: '🧃' },
   { id: 'drinking', label: '喝酒模式', desc: '需年龄确认，理性饮酒', emoji: '🍻' },
 ];
+
+/** 模式主题色，供大厅、氛围条、游戏页使用 */
+export const MODE_THEME: Record<PartyMode, { bg: string; chip: string; emoji: string; label: string; tagline: string }> = {
+  friends:    { bg: 'bg-sticker-yellow',  chip: 'bg-sticker-yellow',  emoji: '🎈', label: '朋友局',   tagline: '熟人开麽，随便玩' },
+  icebreaker: { bg: 'bg-sticker-cyan',    chip: 'bg-sticker-cyan',    emoji: '❄️',  label: '破冰局',   tagline: '新朋友，轻轻热' },
+  funny:      { bg: 'bg-sticker-lime',    chip: 'bg-sticker-lime',    emoji: '😂', label: '搞笑局',   tagline: '今晚抓马现场' },
+  spicy:      { bg: 'bg-sticker-pink',    chip: 'bg-sticker-pink',    emoji: '💋', label: '暧昧局',   tagline: '心动局，保持边界' },
+  sober:      { bg: 'bg-sticker-teal',    chip: 'bg-sticker-teal',    emoji: '🧃', label: '无酒精局', tagline: '不喝酒也很嗨' },
+  drinking:   { bg: 'bg-sticker-orange',  chip: 'bg-sticker-orange',  emoji: '🍻', label: '喝酒模式', tagline: '理性饮酒，不劰不驾' },
+};
