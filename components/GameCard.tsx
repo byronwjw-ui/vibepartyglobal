@@ -10,6 +10,10 @@ const TONES = [
   'bg-sticker-orange', 'bg-sticker-purple/70', 'bg-sticker-coral', 'bg-sticker-teal',
 ];
 
+// 最近打磨过、值得提醒玩家重新体验的游戏 id。
+// 未来同样机制：改完一个游戏加进来，一颗贴纸提示。
+const FRESHLY_UPDATED = new Set<string>(['vibe-type']);
+
 function toneFor(id: string) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
@@ -22,13 +26,24 @@ function tiltFor(idx: number) {
 
 export default function GameCard({ game, index = 0 }: { game: GameDefinition; index?: number }) {
   const tone = toneFor(game.id);
+  const isFresh = FRESHLY_UPDATED.has(game.id);
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04, duration: 0.3 }}>
       <Link href={`/game/${game.id}`} className="block">
         <div className={cn(
-          'border-3 border-paper-900 rounded-3xl shadow-sticker p-4 bg-paper-100 press-down',
+          'relative border-3 border-paper-900 rounded-3xl shadow-sticker p-4 bg-paper-100 press-down',
           tiltFor(index),
         )}>
+          {isFresh && (
+            <motion.span
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 8 }}
+              transition={{ type: 'spring', stiffness: 220, delay: 0.2 + index * 0.04 }}
+              className="absolute -top-2 -right-2 z-10 text-[10px] font-black px-2 py-1 rounded-full bg-sticker-pink border-3 border-paper-900 shadow-sticker-sm"
+            >
+              ✨ 已更新
+            </motion.span>
+          )}
           <div className="flex items-start gap-3">
             <div className={cn('h-14 w-14 rounded-2xl grid place-items-center text-3xl border-3 border-paper-900 shrink-0', tone)}>
               {game.icon}
