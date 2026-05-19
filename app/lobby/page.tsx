@@ -12,13 +12,19 @@ import { cn } from '@/lib/cn';
 export default function LobbyPage() {
   const players = usePartyStore((s) => s.players);
   const settings = usePartyStore((s) => s.settings);
+  const recent = usePartyStore((s) => s.recentGames);
   const theme = MODE_THEME[settings.mode];
 
-  /** 按模式亲和度排序：亲和的游戏会排在同分类顶部 */
+  /** 同分类内：亲和当前模式的优先；其次近期玩过的优先 */
+  const recentRank = (id: string) => {
+    const i = recent.indexOf(id);
+    return i < 0 ? 99 : i;
+  };
   const sorted = [...GAMES].sort((a, b) => {
     const aHit = a.modeAffinity?.includes(settings.mode) ? 1 : 0;
     const bHit = b.modeAffinity?.includes(settings.mode) ? 1 : 0;
-    return bHit - aHit;
+    if (aHit !== bHit) return bHit - aHit;
+    return recentRank(a.id) - recentRank(b.id);
   });
 
   return (

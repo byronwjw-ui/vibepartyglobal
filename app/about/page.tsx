@@ -9,13 +9,14 @@ export default function AboutPage() {
       <main className="px-4 pb-24 space-y-4">
         <GlassCard tone="pink">
           <div className="font-black text-lg">VibeParty</div>
-          <p className="mt-2 text-sm font-semibold text-paper-900/85">为现实聚会设计的多人互动游戏平台。不同的机机能组出不一样的今晚。</p>
+          <p className="mt-2 text-sm font-semibold text-paper-900/85">为现实聚会设计的多人互动游戏平台。不同的聚会模式能组出不一样的今晚。</p>
         </GlassCard>
         <GlassCard>
           <ul className="text-sm font-semibold space-y-1 text-paper-900/90">
             <li>当前版本：v0.2 MVP</li>
             <li>语言：中文</li>
             <li>模式：完全免费试玩版</li>
+            <li>游戏数：28 款</li>
           </ul>
         </GlassCard>
         <GlassCard tone="cyan">
