@@ -9,11 +9,6 @@ export function matchesMode(modeTags: ModeTag[] | undefined, mode: PartyMode): b
   return modeTags.includes(mode);
 }
 
-/**
- * 内容强度与模式的默认可用强度序。
- * - spicy/drinking 允许 spicy
- * - 其他默认到 funny
- */
 export function defaultAllowedLevels(mode: PartyMode): ContentLevel[] {
   switch (mode) {
     case 'spicy':
@@ -36,10 +31,6 @@ export function effectiveLevels(mode: PartyMode, level: ContentLevel): ContentLe
   return Array.from(a).filter((x) => b.has(x));
 }
 
-/**
- * 兜底：把老题库的中文 tags（朋友/搞笑/暧昧/破冰/校园/职场）映射成 modeTags。
- * 这样不用重写每一行题，模式也能真正起作用。
- */
 const TAG_TO_MODE: Record<string, ModeTag[]> = {
   '朋友': ['friends', 'icebreaker', 'funny', 'sober', 'drinking'],
   '搞笑': ['funny', 'friends'],
@@ -62,14 +53,29 @@ export function inferModeTagsFromTags(tags?: string[]): ModeTag[] | undefined {
   return out.size ? Array.from(out) : undefined;
 }
 
+/** 酒精关键字 — 用于"无酒精局"过滤 */
+const BOOZE_RE = /(酒(?!店|楼|吧台|窝)|啤酒|拼酒|劝酒|喝一口|酒精|麦酒|香槟|鸡尾酒|小酌|伏特加|威士忌|龙舌兰|清酒|烧酒)/;
+export function isBoozeText(text: string) { return BOOZE_RE.test(text); }
+
+/** 内部使用：用 unknown 桥接，避免泛型 T 与 { text? } 子类型不兼容 */
+function stripBoozeIfSoberInternal<T>(items: T[], mode: PartyMode): T[] {
+  if (mode !== 'sober') return items;
+  return items.filter((it) => {
+    const t = (it as unknown as { text?: string }).text;
+    return !t || !isBoozeText(t);
+  });
+}
+
+export function stripBoozeIfSober<T extends { text?: string }>(items: T[], mode: PartyMode): T[] {
+  return stripBoozeIfSoberInternal(items, mode);
+}
+
 /**
  * 通用过滤器：支持显式 modeTags，或从中文 tags 推断。
  */
-export function filterByModeAndLevel<T extends { level?: ContentLevel; modeTags?: ModeTag[]; tags?: string[] }>(
-  items: T[],
-  mode: PartyMode,
-  level: ContentLevel,
-): T[] {
+export function filterByModeAndLevel<
+  T extends { level?: ContentLevel; modeTags?: ModeTag[]; tags?: string[]; text?: string }
+>(items: T[], mode: PartyMode, level: ContentLevel): T[] {
   const levels = new Set(effectiveLevels(mode, level));
   const out = items.filter((it) => {
     const lvOk = it.level ? levels.has(it.level) : true;
@@ -79,18 +85,10 @@ export function filterByModeAndLevel<T extends { level?: ContentLevel; modeTags?
   });
   // 兜底：过滤后太空，回退只看 level
   if (out.length >= Math.max(8, Math.floor(items.length * 0.1))) {
-    return stripBoozeIfSober(out, mode);
+    return stripBoozeIfSoberInternal(out, mode);
   }
-  return stripBoozeIfSober(items.filter((it) => (it.level ? levels.has(it.level) : true)), mode);
-}
-
-/** 酒精关键字 — 用于"无酒精局"过滤 */
-const BOOZE_RE = /(酒(?!店|楼|吧台|窝)|啤酒|拼酒|劝酒|喝一口|酒精|麦酒|香槟|鸡尾酒|小酌|伏特加|威士忌|龙舌兰|清酒|烧酒)/;
-export function isBoozeText(text: string) { return BOOZE_RE.test(text); }
-
-export function stripBoozeIfSober<T extends { text?: string }>(items: T[], mode: PartyMode): T[] {
-  if (mode !== 'sober') return items;
-  return items.filter((it) => !it.text || !isBoozeText(it.text));
+  const fallback = items.filter((it) => (it.level ? levels.has(it.level) : true));
+  return stripBoozeIfSoberInternal(fallback, mode);
 }
 
 /**
