@@ -28,8 +28,8 @@ export default function SettingsPage() {
     <AppShell>
       <PageHeader title="设置" backHref="/lobby" />
       <main className="px-4 pb-24 space-y-4">
-        <GlassCard>
-          <div className="font-semibold mb-3">聚会模式</div>
+        <GlassCard tone="yellow">
+          <div className="font-black mb-3">聚会模式</div>
           <ModeSelector value={settings.mode} onChange={(m) => {
             if (m === 'drinking' && !settings.ageConfirmed) setSafetyOpen(true);
             else { setMode(m); setDrinking(m === 'drinking'); }
@@ -46,7 +46,10 @@ export default function SettingsPage() {
           <Row label="内容强度" desc="轻松 / 搞笑 / 暧昧">
             <div className="flex gap-2">
               {(['soft','funny','spicy'] as const).map((l) => (
-                <button key={l} onClick={() => setContentLevel(l)} className={`px-3 h-9 rounded-xl text-sm ${settings.contentLevel===l?'bg-neon-grad text-white':'bg-white/10'}`}>{l==='soft'?'轻松':l==='funny'?'搞笑':'暧昧'}</button>
+                <button key={l} onClick={() => setContentLevel(l)}
+                  className={`px-3 h-9 rounded-xl text-sm font-black border-3 border-paper-900 press-down ${settings.contentLevel === l ? 'bg-sticker-pink shadow-sticker' : 'bg-paper-50 shadow-sticker-sm'}`}>
+                  {l === 'soft' ? '轻松' : l === 'funny' ? '搞笑' : '暧昧'}
+                </button>
               ))}
             </div>
           </Row>
@@ -54,9 +57,9 @@ export default function SettingsPage() {
           <Row label="震动"><Switch checked={settings.vibrationEnabled} onChange={setVibration}/></Row>
         </GlassCard>
 
-        <GlassCard>
-          <Link href="/safety" className="block py-3 border-b border-white/10">查看安全提示</Link>
-          <Link href="/about" className="block py-3">关于 VibeParty</Link>
+        <GlassCard tone="cyan">
+          <Link href="/safety" className="block py-3 border-b-2 border-paper-900/15 font-bold">查看安全提示 →</Link>
+          <Link href="/about" className="block py-3 font-bold">关于 VibeParty →</Link>
         </GlassCard>
 
         <GlassCard>
@@ -67,17 +70,17 @@ export default function SettingsPage() {
       </main>
       <SafetyModal open={safetyOpen} onConfirm={() => { setAgeConfirmed(true); setDrinking(true); setMode('drinking'); setSafetyOpen(false); }} onCancel={() => setSafetyOpen(false)}/>
       <ConfirmModal open={confirmClear} title="清空玩家？" desc="玩家名单将被清除。" onCancel={() => setConfirmClear(false)} onConfirm={() => { clearPlayers(); setConfirmClear(false); }}/>
-      <ConfirmModal open={confirmReset} title="重置全部数据？" desc="将清除玩家、设置与历史。" onCancel={() => setConfirmReset(false)} onConfirm={() => { resetAll(); setConfirmReset(false); }}/>
+      <ConfirmModal open={confirmReset} title="重置全部数据？" desc="将清除玩家、设置与历史。" danger onCancel={() => setConfirmReset(false)} onConfirm={() => { resetAll(); setConfirmReset(false); }}/>
     </AppShell>
   );
 }
 
 function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-white/5 last:border-0">
+    <div className="flex items-center gap-3 py-3 border-b-2 border-paper-900/10 last:border-0">
       <div className="min-w-0 flex-1">
-        <div className="font-medium">{label}</div>
-        {desc ? <div className="text-xs text-white/50">{desc}</div> : null}
+        <div className="font-black text-paper-900">{label}</div>
+        {desc ? <div className="text-xs text-paper-900/60 font-semibold">{desc}</div> : null}
       </div>
       {children}
     </div>
@@ -86,8 +89,8 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
 
 function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button onClick={() => onChange(!checked)} className={`h-7 w-12 rounded-full p-0.5 transition ${checked ? 'bg-neon-grad' : 'bg-white/15'}`}>
-      <span className={`block h-6 w-6 rounded-full bg-white transition ${checked ? 'translate-x-5' : ''}`}/>
+    <button onClick={() => onChange(!checked)} className={`h-7 w-12 rounded-full p-0.5 border-3 border-paper-900 transition ${checked ? 'bg-sticker-yellow' : 'bg-paper-200'}`}>
+      <span className={`block h-5 w-5 rounded-full bg-paper-900 transition ${checked ? 'translate-x-5' : ''}`}/>
     </button>
   );
 }
