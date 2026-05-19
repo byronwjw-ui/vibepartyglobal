@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GameLayout from '@/components/GameLayout';
 import NeonButton from '@/components/NeonButton';
@@ -12,7 +12,15 @@ import { usePartyStore } from '@/store/usePartyStore';
 import { VIBE_QUESTIONS, ARCHETYPES, computeType, summarizeParty, type AxisLetter } from '@/data/zh-CN/vibeType';
 import { vibrate } from '@/lib/gameUtils';
 
-type Phase = 'intro' | 'handoff' | 'test' | 'reveal' | 'blindGuess' | 'blindHandoff' | 'blindResult';
+type Phase =
+  | 'intro'
+  | 'handoff'
+  | 'test'
+  | 'playerComplete'   // ← 新增：当前玩家答完，展示自己的人格 + 明确的"换人"按钮
+  | 'reveal'
+  | 'blindGuess'
+  | 'blindHandoff'
+  | 'blindResult';
 
 interface PlayerResult { playerId: string; type: string; answers: Record<string, AxisLetter>; }
 
@@ -30,8 +38,11 @@ export default function VibeTypeGame() {
   const [currentGuess, setCurrentGuess] = useState<Record<string, AxisLetter | null>>({});
 
   const current = players[playerIdx];
+  const nextPlayer = players[playerIdx + 1];
   const question = VIBE_QUESTIONS[qIdx];
   const totalQ = VIBE_QUESTIONS.length;
+  const justFinished = results[results.length - 1];
+  const justFinishedArchetype = justFinished ? ARCHETYPES[justFinished.type] : null;
 
   const startTest = () => {
     setPhase('handoff'); setPlayerIdx(0); setQIdx(0); setAnswers({}); setResults([]);
@@ -44,20 +55,24 @@ export default function VibeTypeGame() {
     if (qIdx < totalQ - 1) {
       setQIdx(qIdx + 1);
     } else {
-      // 当前玩家测完
+      // 当前玩家测完 → 不再瞬间跳走，停在"个人完成屏"
       const type = computeType(nextAnswers);
       const finished: PlayerResult = { playerId: current.id, type, answers: nextAnswers };
-      const allResults = [...results, finished];
-      setResults(allResults);
-      if (playerIdx < players.length - 1) {
-        // 进入"传手机"过渡
-        setPlayerIdx(playerIdx + 1);
-        setQIdx(0);
-        setAnswers({});
-        setPhase('handoff');
-      } else {
-        setPhase('reveal');
-      }
+      setResults([...results, finished]);
+      vibrate([20, 40, 80]);
+      setPhase('playerComplete');
+    }
+  };
+
+  // 个人完成屏 → 主动推进
+  const goNextPlayerOrReveal = () => {
+    setAnswers({});
+    setQIdx(0);
+    if (playerIdx < players.length - 1) {
+      setPlayerIdx(playerIdx + 1);
+      setPhase('handoff');
+    } else {
+      setPhase('reveal');
     }
   };
 
@@ -117,7 +132,7 @@ export default function VibeTypeGame() {
   // ============ 渲染 ============
   if (phase === 'intro') {
     return (
-      <GameLayout title="VibeType · 派对人格" subtitle="12题 · 大约 1 分钟">
+      <GameLayout title="VibeType · 派对人格" subtitle={`12题 · 大约 1 分钟 · 共 ${players.length} 位玩家依次测`}>
         <div className="space-y-4">
           <GlassCard tone="pink">
             <div className="text-2xl font-black">今晚你是谁？ 🔮</div>
@@ -151,7 +166,7 @@ export default function VibeTypeGame() {
         <HandoffScreen
           open
           nextPlayerName={current.name}
-          hint={`接下来轮到你测 12 道题`}
+          hint={`接下来轮到你测 12 道题 · 第 ${playerIdx + 1} / ${players.length} 位`}
           onDone={() => setPhase('test')}
         />
       </>
@@ -160,9 +175,15 @@ export default function VibeTypeGame() {
 
   if (phase === 'test' && current && question) {
     return (
-      <GameLayout title="VibeType 测试" subtitle={`${current.name} · 第 ${playerIdx + 1} / ${players.length} 位`}>
+      <GameLayout title="VibeType 测试" subtitle={`${current.name} · 第 ${playerIdx + 1} / ${players.length} 位玩家`}>
         <div className="space-y-4">
-          <PhaseProgress value={qIdx + 1} total={totalQ} label={`第 ${qIdx + 1} / ${totalQ} 题`} tone="pink" />
+          {/* 双进度：玩家进度 + 题目进度 */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1">
+              <PhaseProgress value={playerIdx + 1} total={players.length} label={`👥 第 ${playerIdx + 1} / ${players.length} 位玩家`} tone="cyan" />
+            </div>
+          </div>
+          <PhaseProgress value={qIdx + 1} total={totalQ} label={`📝 第 ${qIdx + 1} / ${totalQ} 题`} tone="pink" />
           <GlassCard tone="yellow">
             <div className="text-[11px] font-black text-paper-900/60">情境</div>
             <div className="mt-1 text-lg font-black leading-relaxed">{question.prompt}</div>
@@ -179,7 +200,99 @@ export default function VibeTypeGame() {
               </button>
             </motion.div>
           </AnimatePresence>
+          {/* 最后一题的明确提示 */}
+          {qIdx === totalQ - 1 && (
+            <div className="text-center text-xs font-black text-paper-900/70 animate-pulse">
+              🏁 最后一题，答完会出你的派对人格！
+            </div>
+          )}
           <div className="pt-2"><SkipButton onClick={skipQuestion} /></div>
+        </div>
+      </GameLayout>
+    );
+  }
+
+  // ✅ 新增：当前玩家完成屏 —— 这才是真正"换人"的信号
+  if (phase === 'playerComplete' && current && justFinished && justFinishedArchetype) {
+    const isLast = playerIdx >= players.length - 1;
+    const a = justFinishedArchetype;
+    return (
+      <GameLayout title="测完啦 🎉" subtitle={`${current.name} 答完 12 题`}>
+        <div className="space-y-4">
+          {/* 撒花横幅 */}
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0, rotate: -8 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 180, damping: 14 }}
+            className="text-center"
+          >
+            <div className="text-6xl">🎉</div>
+            <div className="text-xs font-black text-paper-900/70 mt-1">{current.name} 的派对人格揭晓</div>
+          </motion.div>
+
+          {/* 个人人格卡 */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 180, delay: 0.2 }}
+            className={`border-3 border-paper-900 rounded-3xl shadow-sticker p-5 ${a.color} tilt-r-sm`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 rounded-2xl border-3 border-paper-900 grid place-items-center text-4xl bg-paper-50">{a.emoji}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-black text-paper-900/60">你是</div>
+                <div className="text-xl font-black text-paper-900 truncate doodle-title">{a.nickname}</div>
+                <div className="text-xs font-bold text-paper-900/70">{a.type}</div>
+              </div>
+            </div>
+            <div className="mt-3 text-sm font-bold text-paper-900">"{a.oneLiner}"</div>
+            <div className="mt-2 text-xs font-bold text-paper-900/70">今晚建议：{a.advice}</div>
+          </motion.div>
+
+          {/* 进度提示 */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+            <PhaseProgress
+              value={playerIdx + 1}
+              total={players.length}
+              label={`已完成 ${playerIdx + 1} / ${players.length} 位玩家`}
+              tone="cyan"
+            />
+          </motion.div>
+
+          {/* 明确的换人按钮 —— 不再让用户困惑 */}
+          {!isLast ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="space-y-2"
+            >
+              <div className="sticker p-4 bg-sticker-yellow text-center">
+                <div className="text-2xl mb-1">📱➡️</div>
+                <div className="text-sm font-black text-paper-900">把手机递给</div>
+                <div className="text-2xl font-black doodle-title text-paper-900 mt-1">{nextPlayer?.name}</div>
+                <div className="text-[11px] font-bold text-paper-900/70 mt-1">轮到 TA 测了</div>
+              </div>
+              <NeonButton full size="lg" onClick={goNextPlayerOrReveal}>
+                好了，给 {nextPlayer?.name} →
+              </NeonButton>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <div className="sticker p-4 bg-sticker-mint text-center mb-2">
+                <div className="text-3xl mb-1">🏁</div>
+                <div className="text-sm font-black text-paper-900">全员测完啦！</div>
+                <div className="text-[11px] font-bold text-paper-900/70 mt-1">一起来看今晚的派对配置</div>
+              </div>
+              <NeonButton full size="lg" onClick={goNextPlayerOrReveal}>
+                🎊 揭晓今晚配置 →
+              </NeonButton>
+            </motion.div>
+          )}
         </div>
       </GameLayout>
     );
@@ -220,7 +333,7 @@ export default function VibeTypeGame() {
                       <div className="font-black text-paper-900 truncate">{a.nickname} · {a.type}</div>
                     </div>
                   </div>
-                  <div className="mt-2 text-sm font-bold text-paper-900">“{a.oneLiner}”</div>
+                  <div className="mt-2 text-sm font-bold text-paper-900">"{a.oneLiner}"</div>
                   <div className="mt-1 text-xs font-bold text-paper-900/70">今晚建议：{a.advice}</div>
                 </motion.div>
               );
