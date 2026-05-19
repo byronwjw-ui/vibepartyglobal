@@ -39,6 +39,12 @@ import CheersChainGame from './games/CheersChainGame';
 import PartyRpsGame from './games/PartyRpsGame';
 import BlindVoteGame from './games/BlindVoteGame';
 
+// 派对实验室 4 个
+import VibeTypeGame from './games/VibeTypeGame';
+import WhoIsAiGame from './games/WhoIsAiGame';
+import SlideshowStoryGame from './games/SlideshowStoryGame';
+import TierListGame from './games/TierListGame';
+
 const REGISTRY: Record<string, React.ComponentType> = {
   'oracle-book': OracleBookGame,
   'truth-or-dare': TruthOrDareGame,
@@ -69,6 +75,11 @@ const REGISTRY: Record<string, React.ComponentType> = {
   'cheers-chain': CheersChainGame,
   'party-rps': PartyRpsGame,
   'blind-vote': BlindVoteGame,
+  // 派对实验室
+  'vibe-type': VibeTypeGame,
+  'who-is-ai': WhoIsAiGame,
+  'slideshow-story': SlideshowStoryGame,
+  'tier-list': TierListGame,
 };
 
 export default function GamePage() {

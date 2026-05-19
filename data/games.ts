@@ -26,6 +26,7 @@ export const GAMES: GameDefinition[] = [
   { id: 'three-sentence', title: '三句话故事', subtitle: '三个人各说一句，连成一个故事', category: '表演 / 创意', minPlayers: 3, duration: '10分', difficulty: '简单', tags: ['即兴','合作'], modeAffinity: ['funny','friends'], icon: '📖', isPremium: false, enabled: true },
   { id: 'two-truths', title: '谎言侦探', subtitle: '说三件事（两真一假），其他人猜哪句假', category: '表演 / 创意', minPlayers: 3, duration: '10分', difficulty: '简单', tags: ['破冰','推理'], modeAffinity: ['icebreaker','friends'], icon: '🕵️‍♀️', isPremium: false, enabled: true },
   { id: 'guess-doodle', title: '谁画的？', subtitle: '一人口述描述一个图形，其他人猜', category: '表演 / 创意', minPlayers: 3, duration: '10分', difficulty: '简单', tags: ['想象','猜词'], modeAffinity: ['funny','icebreaker'], icon: '🎨', isPremium: false, enabled: true },
+  { id: 'slideshow-story', title: '故事接龙·一句一图', subtitle: '每人接一句配一张现场拍的照片，看幻灯片', category: '表演 / 创意', minPlayers: 3, duration: '15分', difficulty: '中等', tags: ['创意','拍照'], modeAffinity: ['friends','icebreaker','funny'], icon: '📸', isPremium: false, enabled: true },
 
   // ============ 反应 / 手速 ============
   { id: 'pass-bomb', title: '传递炸弹', subtitle: '随机倒计时，结束时拿手机的人挑战', category: '反应 / 手速', minPlayers: 3, duration: '10分', difficulty: '简单', tags: ['倒计时','紧张'], modeAffinity: ['funny','drinking'], icon: '💥', isPremium: false, enabled: true },
@@ -44,17 +45,23 @@ export const GAMES: GameDefinition[] = [
   { id: 'undercover', title: 'Undercover 谁是卧底', subtitle: '迷与伺之争', category: '推理游戏', minPlayers: 3, duration: '15-25分', difficulty: '较难', tags: ['身份','讨论'], modeAffinity: ['friends','funny'], icon: '🕵️', isPremium: false, enabled: true },
   { id: 'secret-location', title: 'Secret Location 间谍地点', subtitle: '猜出现场是哪里', category: '推理游戏', minPlayers: 4, duration: '15-25分', difficulty: '较难', tags: ['身份','隐藏'], modeAffinity: ['friends','funny'], icon: '🗺️', isPremium: false, enabled: true },
   { id: 'mafia-lite', title: 'Mafia Lite 黑手党极速版', subtitle: '五个角色、一夜一白', category: '推理游戏', minPlayers: 5, duration: '20-30分', difficulty: '较难', tags: ['夜晚','投票'], modeAffinity: ['friends'], icon: '🌙', isPremium: false, enabled: true },
+
+  // ============ 派对实验室（新增） ============
+  { id: 'vibe-type', title: 'VibeType · 派对人格', subtitle: '12题测出你今晚的派对角色 · 可选盲猜', category: '派对实验室', minPlayers: 2, duration: '5-10分', difficulty: '简单', tags: ['性格','揭晓','传播'], modeAffinity: ['icebreaker','friends','funny'], icon: '🧬', isPremium: false, enabled: true },
+  { id: 'who-is-ai', title: '谁是 AI', subtitle: '一人被分配为 AI，要伪装机器魂回答', category: '派对实验室', minPlayers: 4, duration: '10-15分', difficulty: '中等', tags: ['推理','讨论','玩棗'], modeAffinity: ['funny','friends','icebreaker'], icon: '🤖', isPremium: false, enabled: true },
+  { id: 'tier-list', title: '现场 Tier List', subtitle: '全场一起给一组东西排 S/A/B/C/D', category: '派对实验室', minPlayers: 2, duration: '10分', difficulty: '简单', tags: ['讨论','共识','吐槽'], modeAffinity: ['friends','funny','icebreaker'], icon: '📊', isPremium: false, enabled: true },
 ];
 
 export const GAME_CATEGORIES: { id: string; label: string }[] = [
-  { id: '热场游戏', label: '🔥 热场游戏' },
-  { id: '反应 / 手速', label: '⚡ 反应 / 手速' },
-  { id: '表演 / 创意', label: '🎭 表演 / 创意' },
-  { id: '投票互动', label: '🗳️ 投票互动' },
-  { id: '暧昧 / 心动', label: '💘 暧昧 / 心动' },
+  { id: '热场游戏',       label: '🔥 热场游戏' },
+  { id: '派对实验室',   label: '🧬 派对实验室' },
+  { id: '反应 / 手速',     label: '⚡ 反应 / 手速' },
+  { id: '表演 / 创意',     label: '🎭 表演 / 创意' },
+  { id: '投票互动',       label: '🗳️ 投票互动' },
+  { id: '暧昧 / 心动',     label: '💘 暧昧 / 心动' },
   { id: '喝酒 / 无酒精', label: '🥂 喝酒 / 无酒精' },
-  { id: '运气游戏', label: '🎲 运气游戏' },
-  { id: '推理游戏', label: '🕵️ 推理游戏' },
+  { id: '运气游戏',       label: '🎲 运气游戏' },
+  { id: '推理游戏',       label: '🕵️ 推理游戏' },
 ];
 
 export function getGame(id: string): GameDefinition | undefined {

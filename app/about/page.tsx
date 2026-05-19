@@ -13,10 +13,10 @@ export default function AboutPage() {
         </GlassCard>
         <GlassCard>
           <ul className="text-sm font-semibold space-y-1 text-paper-900/90">
-            <li>当前版本：v0.2 MVP</li>
+            <li>当前版本：v0.3 MVP</li>
             <li>语言：中文</li>
             <li>模式：完全免费试玩版</li>
-            <li>游戏数：28 款</li>
+            <li>游戏数：32 款（含·派对实验室）</li>
           </ul>
         </GlassCard>
         <GlassCard tone="cyan">
